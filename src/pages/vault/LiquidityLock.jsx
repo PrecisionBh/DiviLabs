@@ -3,7 +3,10 @@ import { BrowserProvider, Contract, parseUnits, parseEther } from "ethers";
 
 const CONTRACT_ADDRESS = "YOUR_LOCKER_CONTRACT_ADDRESS";
 const CONTRACT_ABI = [/* your contract ABI here */];
-const ERC20_ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
 
 export default function LiquidityLock() {
   const [walletAddress, setWalletAddress] = useState(null);
@@ -37,15 +40,27 @@ export default function LiquidityLock() {
 
   const fetchLpBalance = async () => {
     try {
-      if (!lpAddress.startsWith("0x") || !walletAddress) return;
+      if (!window.ethereum) {
+        alert("MetaMask not found");
+        return;
+      }
+
+      if (!lpAddress.startsWith("0x") || !walletAddress) {
+        alert("Enter a valid LP address and ensure your wallet is connected.");
+        return;
+      }
+
       const provider = new BrowserProvider(window.ethereum);
       const token = new Contract(lpAddress, ERC20_ABI, provider);
+
       const rawBalance = await token.balanceOf(walletAddress);
       const decimals = await token.decimals();
-      const formatted = parseFloat(rawBalance.toString()) / 10 ** decimals;
-      setLpBalance(formatted.toFixed(2));
+      const formatted = Number(rawBalance.toString()) / 10 ** decimals;
+
+      setLpBalance(formatted.toFixed(4));
     } catch (err) {
       console.error("Failed to fetch LP balance", err);
+      alert("Error fetching LP balance.");
     }
   };
 
@@ -53,7 +68,7 @@ export default function LiquidityLock() {
     const percent = parseFloat(value);
     setPercentageToLock(value);
     if (!isNaN(percent) && percent >= 1 && percent <= 100 && lpBalance !== null) {
-      const amount = ((lpBalance * percent) / 100).toFixed(2);
+      const amount = ((lpBalance * percent) / 100).toFixed(4);
       setCalculatedAmount(amount);
     } else {
       setCalculatedAmount("");
@@ -134,6 +149,9 @@ export default function LiquidityLock() {
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
             placeholder="0x..."
           />
+          {lpBalance !== null && (
+            <p className="text-cyan-200 text-sm mt-1">Wallet LP Balance: {lpBalance} tokens</p>
+          )}
         </div>
 
         <div className="space-y-2">
