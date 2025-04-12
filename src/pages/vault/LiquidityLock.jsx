@@ -1,8 +1,86 @@
 import React, { useState, useEffect } from "react";
 import { BrowserProvider, Contract, parseUnits, parseEther } from "ethers";
 
-const CONTRACT_ADDRESS = "YOUR_LOCKER_CONTRACT_ADDRESS";
-const CONTRACT_ABI = [/* your contract ABI here */];
+const CONTRACT_ADDRESS = "0x27Ce0569B5f865A1C1F6fA36D66cE07ca329ce35";
+const CONTRACT_ABI = [
+    {
+      "inputs": [
+        { "internalType": "address", "name": "_nft", "type": "address" }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+      "name": "approveManualUnlock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+      "name": "claim",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+      "name": "claimEmergencyUnlock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+      "name": "forceUnlockByOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "address", "name": "token", "type": "address" },
+        { "internalType": "uint256", "name": "amount", "type": "uint256" },
+        { "internalType": "uint256", "name": "unlockTime", "type": "uint256" },
+        { "internalType": "string", "name": "lockName", "type": "string" },
+        { "internalType": "address[]", "name": "unlockers", "type": "address[]" },
+        { "internalType": "uint8", "name": "lockType", "type": "uint8" },
+        { "internalType": "bool", "name": "withNFT", "type": "bool" },
+        { "internalType": "string", "name": "metadataURI", "type": "string" },
+        { "internalType": "string", "name": "website", "type": "string" },
+        { "internalType": "string", "name": "social", "type": "string" },
+        {
+          "components": [
+            { "internalType": "uint256", "name": "releaseTime", "type": "uint256" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" },
+            { "internalType": "bool", "name": "claimed", "type": "bool" }
+          ],
+          "internalType": "struct DiviVaultLockerV2.VestingCheckpoint[]",
+          "name": "checkpoints",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "lockTokens",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+      "name": "startEmergencyUnlock",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [{ "internalType": "address payable", "name": "to", "type": "address" }],
+      "name": "withdrawFees",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];  
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)"
