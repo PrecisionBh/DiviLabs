@@ -55,8 +55,9 @@ export default function LiquidityLock() {
 
       const rawBalance = await token.balanceOf(walletAddress);
       const decimals = await token.decimals();
-      const formatted = Number(rawBalance.toString()) / 10 ** decimals;
-
+      const divisor = BigInt(10) ** BigInt(decimals);
+      const formatted = Number(rawBalance * 10000n / divisor) / 10000;
+      
       setLpBalance(formatted.toFixed(4));
     } catch (err) {
       console.error("Full LP balance error:", err);
