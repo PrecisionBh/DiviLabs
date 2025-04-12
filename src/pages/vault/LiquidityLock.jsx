@@ -155,40 +155,22 @@ export default function LiquidityLock() {
   };
 
   const isValid = () => {
-    if (!lpAddress || !lpAddress.startsWith("0x")) {
-      console.log("Invalid LP Address");
-      return false; // Invalid LP address
-    }
-  
+    if (!lpAddress || !lpAddress.startsWith("0x")) return false; // Invalid LP address
+
     const percent = parseFloat(percentageToLock);
-    if (isNaN(percent) || percent <= 0 || percent > 100) {
-      console.log("Invalid Percentage");
-      return false; // Invalid percentage
-    }
-  
+    if (isNaN(percent) || percent <= 0 || percent > 100) return false; // Invalid percentage
+
     const amount = parseFloat(calculatedAmount);
-    if (isNaN(amount) || amount <= 0) {
-      console.log("Invalid Calculated Amount");
-      return false; // Invalid calculated amount
-    }
-  
-    if (!unlockDate) {
-      console.log("Unlock Date Not Set");
-      return false; // No unlock date set
-    }
-  
+    if (isNaN(amount) || amount <= 0) return false; // Invalid calculated amount
+
+    if (!unlockDate) return false; // No unlock date set
+
     const selected = new Date(unlockDate + "T00:00:00");
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-  
-    if (selected <= today) {
-      console.log("Unlock Date is in the Past");
-      return false; // Unlock date must be in the future
-    }
-  
-    console.log("Validation Passed");
-    return true; // All checks passed
-  };  
+
+    return selected > today; // Unlock date must be in the future
+  };
 
   const handleLock = async () => {
     try {
