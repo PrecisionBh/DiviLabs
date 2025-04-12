@@ -195,26 +195,32 @@ export default function LiquidityLock() {
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
   
-      // Filter out empty or invalid addresses
+      // Ensure that multiSigAddresses is an array and contains valid addresses
       const validMultiSigAddresses = multiSigAddresses.filter(addr => addr && addr.startsWith("0x"));
       console.log("Valid Multi-Sig Addresses:", validMultiSigAddresses);
   
-      // Determine lock type based on multiSigAddresses length
+      // If no multi-sig, pass empty array for unlockers
+      const unlockers = validMultiSigAddresses.length > 1 ? validMultiSigAddresses : [validMultiSigAddresses[0]];
+      
+      // Determine lock type based on multiSigAddresses length (single vs multi-sig)
       const lockType = validMultiSigAddresses.length > 1 ? 1 : 0;
   
+      console.log("Unlockers Array Before Sending:", unlockers);
+      console.log("Lock Type:", lockType);
+  
       const tx = await contract.lockTokens(
-        lpAddress,
-        amountInWei,
-        unlockTimestamp,
-        lockName,
-        validMultiSigAddresses,
-        lockType, // Pass lock type based on multi-sig or not
-        false, // NFT flag (optional)
-        false, // Additional flag (optional)
-        "", // Metadata URI (optional)
-        websiteLink, // Website link
-        socialLink, // Social link
-        { value: fee } // Fee in BNB
+        lpAddress,               // LP Token Address
+        amountInWei,             // Amount to lock (converted to Wei)
+        unlockTimestamp,         // Unlock time as Unix timestamp
+        lockName,                // Lock name
+        unlockers,               // Multi-sig wallet addresses (array of addresses)
+        lockType,                // Lock type: 0 for single-sig, 1 for multi-sig
+        false,                   // NFT flag (optional)
+        false,                   // Additional flag (optional)
+        "",                      // Metadata URI (optional)
+        websiteLink,             // Website link
+        socialLink,              // Social link
+        { value: fee }           // Fee in BNB
       );
   
       await tx.wait();
