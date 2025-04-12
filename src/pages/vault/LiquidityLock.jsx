@@ -155,21 +155,49 @@ export default function LiquidityLock() {
   };
 
   const isValid = () => {
-    if (!lpAddress || !lpAddress.startsWith("0x")) return false; // Invalid LP address
+    // Ensure LP Address is correct
+    console.log("LP Address:", lpAddress);
+    if (!lpAddress || !lpAddress.startsWith("0x")) {
+      console.log("Invalid LP Address");
+      return false; // Invalid LP address
+    }
 
+    // Ensure percentage to lock is a valid number
     const percent = parseFloat(percentageToLock);
-    if (isNaN(percent) || percent <= 0 || percent > 100) return false; // Invalid percentage
+    console.log("Percentage to Lock:", percent);
+    if (isNaN(percent) || percent <= 0 || percent > 100) {
+      console.log("Invalid Percentage");
+      return false; // Invalid percentage
+    }
 
+    // Ensure calculated amount is a valid number
     const amount = parseFloat(calculatedAmount);
-    if (isNaN(amount) || amount <= 0) return false; // Invalid calculated amount
+    console.log("Calculated Amount:", amount);
+    if (isNaN(amount) || amount <= 0) {
+      console.log("Invalid Calculated Amount");
+      return false; // Invalid calculated amount
+    }
 
-    if (!unlockDate) return false; // No unlock date set
+    // Ensure unlock date is in the future
+    if (!unlockDate) {
+      console.log("Unlock Date Not Set");
+      return false; // No unlock date set
+    }
 
-    const selected = new Date(unlockDate + "T00:00:00");
+    // Convert mm/dd/yyyy to yyyy-mm-dd
+    const [month, day, year] = unlockDate.split('/');
+    const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const selected = new Date(formattedDate + "T00:00:00");
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    console.log("Selected Unlock Date:", selected);
+    if (selected <= today) {
+      console.log("Unlock Date is in the Past");
+      return false; // Unlock date must be in the future
+    }
 
-    return selected > today; // Unlock date must be in the future
+    console.log("Validation Passed");
+    return true; // All checks passed
   };
 
   const handleLock = async () => {
