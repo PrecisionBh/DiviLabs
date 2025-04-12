@@ -144,25 +144,24 @@ export default function LiquidityLock() {
   };
 
   const handlePercentageChange = (value) => {
-    const percent = parseFloat(value);
     setPercentageToLock(value);
+    // If percentage is valid, calculate the amount to lock
+    const percent = parseFloat(value);
     if (!isNaN(percent) && percent >= 1 && percent <= 100 && lpBalance !== null) {
       const amount = ((lpBalance * percent) / 100).toFixed(4);
       setCalculatedAmount(amount);
     } else {
-      setCalculatedAmount("");
+      setCalculatedAmount(""); // Clear if percentage is invalid
     }
   };
 
   const isValid = () => {
-    // Ensure LP Address is correct
     console.log("LP Address:", lpAddress);
     if (!lpAddress || !lpAddress.startsWith("0x")) {
       console.log("Invalid LP Address");
       return false; // Invalid LP address
     }
 
-    // Ensure percentage to lock is a valid number
     const percent = parseFloat(percentageToLock);
     console.log("Percentage to Lock:", percent);
     if (isNaN(percent) || percent <= 0 || percent > 100) {
@@ -170,7 +169,6 @@ export default function LiquidityLock() {
       return false; // Invalid percentage
     }
 
-    // Ensure calculated amount is a valid number
     const amount = parseFloat(calculatedAmount);
     console.log("Calculated Amount:", amount);
     if (isNaN(amount) || amount <= 0) {
@@ -178,7 +176,6 @@ export default function LiquidityLock() {
       return false; // Invalid calculated amount
     }
 
-    // Ensure unlock date is in the future
     if (!unlockDate) {
       console.log("Unlock Date Not Set");
       return false; // No unlock date set
