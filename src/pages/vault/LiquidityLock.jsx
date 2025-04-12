@@ -144,11 +144,14 @@ export default function LiquidityLock() {
   };
 
   const handlePercentageChange = (value) => {
+    console.log("Percentage to Lock:", value);
     setPercentageToLock(value);
-    // If percentage is valid, calculate the amount to lock
+
     const percent = parseFloat(value);
+
     if (!isNaN(percent) && percent >= 1 && percent <= 100 && lpBalance !== null) {
       const amount = ((lpBalance * percent) / 100).toFixed(4);
+      console.log("Calculated Amount:", amount); // Log calculated amount
       setCalculatedAmount(amount);
     } else {
       setCalculatedAmount(""); // Clear if percentage is invalid
@@ -159,29 +162,28 @@ export default function LiquidityLock() {
     console.log("LP Address:", lpAddress);
     if (!lpAddress || !lpAddress.startsWith("0x")) {
       console.log("Invalid LP Address");
-      return false; // Invalid LP address
+      return false;
     }
 
     const percent = parseFloat(percentageToLock);
     console.log("Percentage to Lock:", percent);
     if (isNaN(percent) || percent <= 0 || percent > 100) {
       console.log("Invalid Percentage");
-      return false; // Invalid percentage
+      return false;
     }
 
     const amount = parseFloat(calculatedAmount);
     console.log("Calculated Amount:", amount);
     if (isNaN(amount) || amount <= 0) {
       console.log("Invalid Calculated Amount");
-      return false; // Invalid calculated amount
+      return false;
     }
 
     if (!unlockDate) {
       console.log("Unlock Date Not Set");
-      return false; // No unlock date set
+      return false;
     }
 
-    // Convert mm/dd/yyyy to yyyy-mm-dd
     const [month, day, year] = unlockDate.split('/');
     const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     const selected = new Date(formattedDate + "T00:00:00");
@@ -190,11 +192,11 @@ export default function LiquidityLock() {
     console.log("Selected Unlock Date:", selected);
     if (selected <= today) {
       console.log("Unlock Date is in the Past");
-      return false; // Unlock date must be in the future
+      return false;
     }
 
     console.log("Validation Passed");
-    return true; // All checks passed
+    return true;
   };
 
   const handleLock = async () => {
@@ -207,10 +209,8 @@ export default function LiquidityLock() {
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
 
-      // No multi-sig needed, pass the wallet address as the only unlocker
       const unlockers = [walletAddress];
 
-      // Lock type: single-sig (0)
       const lockType = 0;
 
       const tx = await contract.lockTokens(
