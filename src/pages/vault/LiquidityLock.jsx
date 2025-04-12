@@ -135,7 +135,7 @@ export default function LiquidityLock() {
       const divisor = BigInt(10) ** BigInt(decimals);
       const formatted = Number((rawBalance * 10000n) / divisor) / 10000;
 
-      console.log("LP Balance:", formatted);
+      console.log("LP Balance:", formatted); // Log the LP balance
       setLpBalance(formatted.toFixed(4));
     } catch (err) {
       console.error("Error fetching LP balance:", err);
@@ -144,14 +144,18 @@ export default function LiquidityLock() {
   };
 
   const handlePercentageChange = (value) => {
-    console.log("Percentage to Lock:", value);
+    console.log("Percentage to Lock:", value); // Log percentage input
     setPercentageToLock(value);
 
     const percent = parseFloat(value);
 
     if (!isNaN(percent) && percent >= 1 && percent <= 100 && lpBalance !== null) {
+      // Log LP Balance before calculation
+      console.log("LP Balance for Calculation:", lpBalance);
+
+      // Calculate the amount based on LP balance
       const amount = ((lpBalance * percent) / 100).toFixed(4);
-      console.log("Calculated Amount:", amount); // Log calculated amount
+      console.log("Calculated Amount:", amount); // Log the calculated amount
       setCalculatedAmount(amount);
     } else {
       setCalculatedAmount(""); // Clear if percentage is invalid
@@ -162,26 +166,26 @@ export default function LiquidityLock() {
     console.log("LP Address:", lpAddress);
     if (!lpAddress || !lpAddress.startsWith("0x")) {
       console.log("Invalid LP Address");
-      return false;
+      return false; // Invalid LP address
     }
 
     const percent = parseFloat(percentageToLock);
     console.log("Percentage to Lock:", percent);
     if (isNaN(percent) || percent <= 0 || percent > 100) {
       console.log("Invalid Percentage");
-      return false;
+      return false; // Invalid percentage
     }
 
     const amount = parseFloat(calculatedAmount);
     console.log("Calculated Amount:", amount);
     if (isNaN(amount) || amount <= 0) {
       console.log("Invalid Calculated Amount");
-      return false;
+      return false; // Invalid calculated amount
     }
 
     if (!unlockDate) {
       console.log("Unlock Date Not Set");
-      return false;
+      return false; // No unlock date set
     }
 
     const [month, day, year] = unlockDate.split('/');
