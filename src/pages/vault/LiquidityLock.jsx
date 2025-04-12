@@ -97,12 +97,9 @@ export default function LiquidityLock() {
   const [lockName, setLockName] = useState("");
   const [socialLink, setSocialLink] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
-  const [multiSigAddresses, setMultiSigAddresses] = useState([""]);
-  const [showTooltip, setShowTooltip] = useState(false);
 
   const baseCost = 0.25;
-  const multisigCost = 0.1 * (multiSigAddresses.length - 1);
-  const totalCost = (baseCost + multisigCost).toFixed(2);
+  const totalCost = baseCost.toFixed(2);
 
   useEffect(() => {
     connectWallet();
@@ -114,7 +111,6 @@ export default function LiquidityLock() {
       const accounts = await provider.send("eth_requestAccounts", []);
       console.log("Connected Wallet:", accounts[0]);
       setWalletAddress(accounts[0]);
-      setMultiSigAddresses([accounts[0]]);
     }
   };
 
@@ -158,15 +154,6 @@ export default function LiquidityLock() {
     }
   };
 
-  const handleAddAddress = () => setMultiSigAddresses([...multiSigAddresses, ""]);
-  const handleRemoveAddress = (index) =>
-    setMultiSigAddresses(multiSigAddresses.filter((_, i) => i !== index));
-  const handleAddressChange = (index, value) => {
-    const updated = [...multiSigAddresses];
-    updated[index] = value;
-    setMultiSigAddresses(updated);
-  };
-
   const isValid = () => {
     if (!lpAddress.startsWith("0x")) return false;
 
@@ -190,31 +177,24 @@ export default function LiquidityLock() {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-  
+
       const unlockTimestamp = Math.floor(new Date(unlockDate + "T00:00:00").getTime() / 1000);
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
-  
-      // Ensure that multiSigAddresses is an array and contains valid addresses
-      const validMultiSigAddresses = multiSigAddresses.filter(addr => addr && addr.startsWith("0x"));
-      console.log("Valid Multi-Sig Addresses:", validMultiSigAddresses);
-  
-      // If no multi-sig, pass empty array for unlockers
-      const unlockers = validMultiSigAddresses.length > 1 ? validMultiSigAddresses : [validMultiSigAddresses[0]];
-      
-      // Determine lock type based on multiSigAddresses length (single vs multi-sig)
-      const lockType = validMultiSigAddresses.length > 1 ? 1 : 0;
-  
-      console.log("Unlockers Array Before Sending:", unlockers);
-      console.log("Lock Type:", lockType);
-  
+
+      // No multi-sig needed, pass the wallet address as the only unlocker
+      const unlockers = [walletAddress];
+
+      // Lock type: single-sig (0)
+      const lockType = 0;
+
       const tx = await contract.lockTokens(
         lpAddress,               // LP Token Address
         amountInWei,             // Amount to lock (converted to Wei)
         unlockTimestamp,         // Unlock time as Unix timestamp
         lockName,                // Lock name
-        unlockers,               // Multi-sig wallet addresses (array of addresses)
-        lockType,                // Lock type: 0 for single-sig, 1 for multi-sig
+        unlockers,               // Only one unlocker (the wallet address)
+        lockType,                // Lock type: 0 for single-sig
         false,                   // NFT flag (optional)
         false,                   // Additional flag (optional)
         "",                      // Metadata URI (optional)
@@ -222,14 +202,14 @@ export default function LiquidityLock() {
         socialLink,              // Social link
         { value: fee }           // Fee in BNB
       );
-  
+
       await tx.wait();
       alert("Liquidity successfully locked!");
     } catch (err) {
       console.error("Transaction failed:", err);
       alert("Transaction failed.");
     }
-  };  
+  };
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-12">
@@ -308,54 +288,6 @@ export default function LiquidityLock() {
           placeholder="https://twitter.com/project (optional)"
           className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
         />
-
-        {/* Multi-Sig Wallet Addresses */}
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <label className="text-cyan-300 font-medium">Multi-Sig Wallets (optional)</label>
-            <button
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              className="text-cyan-400 text-sm"
-            >
-              ?
-            </button>
-          </div>
-          {showTooltip && (
-            <div className="bg-gray-800 text-white text-xs p-3 rounded-md mb-3 max-w-sm shadow-md">
-              Multi-sig means the locked tokens cannot be withdrawn until <strong>all wallet addresses</strong> listed here approve the unlock. Divi Vault uses this system to ensure team funds require full consensus before release.
-            </div>
-          )}
-          <button
-            onClick={handleAddAddress}
-            className="text-sm text-cyan-400 hover:underline mb-3 block text-left"
-          >
-            + Add Multi-Sig Wallet (+0.1 BNB)
-          </button>
-        </div>
-
-        {/* Display Multi-Sig Addresses */}
-        {multiSigAddresses.length > 1 &&
-          multiSigAddresses.slice(1).map((addr, index) => (
-            <div key={index + 1} className="relative mb-3">
-              <input
-                type="text"
-                value={addr}
-                onChange={(e) => handleAddressChange(index + 1, e.target.value)}
-                className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-                placeholder="0x..."
-              />
-              <button
-                onClick={() => handleRemoveAddress(index + 1)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-red-400"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-
-        {/* Estimated Fee */}
-        <div className="text-cyan-200 font-bold text-lg mt-4">Estimated Fee: {totalCost} BNB</div>
 
         {/* Lock Button */}
         <button
