@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ethers } from "ethers";
+import { BrowserProvider, Contract, parseUnits, parseEther } from "ethers";
 
 const CONTRACT_ADDRESS = "YOUR_LOCKER_CONTRACT_ADDRESS";
 const CONTRACT_ABI = [/* your contract ABI here */];
@@ -31,12 +31,10 @@ export default function LiquidityLock() {
 
   const connectWallet = async () => {
     if (window.ethereum) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const address = await signer.getAddress();
-      setWalletAddress(address);
-      setMultiSigAddresses([address]);
+      const provider = new BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      setWalletAddress(accounts[0]);
+      setMultiSigAddresses([accounts[0]]);
     }
   };
 
@@ -52,8 +50,8 @@ export default function LiquidityLock() {
         return;
       }
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const token = new ethers.Contract(lpAddress, ERC20_ABI, provider);
+      const provider = new BrowserProvider(window.ethereum);
+      const token = new Contract(lpAddress, ERC20_ABI, provider);
 
       const rawBalance = await token.balanceOf(walletAddress);
       const decimals = await token.decimals();
@@ -78,7 +76,8 @@ export default function LiquidityLock() {
   };
 
   const handleAddAddress = () => setMultiSigAddresses([...multiSigAddresses, ""]);
-  const handleRemoveAddress = (index) => setMultiSigAddresses(multiSigAddresses.filter((_, i) => i !== index));
+  const handleRemoveAddress = (index) =>
+    setMultiSigAddresses(multiSigAddresses.filter((_, i) => i !== index));
   const handleAddressChange = (index, value) => {
     const updated = [...multiSigAddresses];
     updated[index] = value;
@@ -101,13 +100,13 @@ export default function LiquidityLock() {
 
   const handleLock = async () => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
       const unlockTimestamp = Math.floor(new Date(unlockDate).getTime() / 1000);
-      const amountInWei = ethers.utils.parseUnits(calculatedAmount, 18);
-      const fee = ethers.utils.parseEther(totalCost);
+      const amountInWei = parseUnits(calculatedAmount, 18);
+      const fee = parseEther(totalCost);
 
       const tx = await contract.lockTokens(
         lpAddress,
@@ -266,4 +265,3 @@ export default function LiquidityLock() {
     </div>
   );
 }
-
