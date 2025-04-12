@@ -5,7 +5,7 @@ import VaultLanding from "./pages/vault/VaultLanding";
 import ChainSelect from "./pages/vault/ChainSelect";
 import TokenTypeSelect from "./pages/vault/TokenTypeSelect";
 import LiquidityLock from "./pages/vault/LiquidityLock";
-import TeamTokenLock from "./pages/vault/TeamTokenLock"; // ✅ NEW ROUTE
+import TeamTokenLock from "./pages/vault/TeamTokenLock";
 import PromoPage from "./pages/vault/PromoPage";
 import LoadingPage from "./pages/vault/LoadingPage";
 import VaultResultPage from "./pages/vault/VaultResultPage";
