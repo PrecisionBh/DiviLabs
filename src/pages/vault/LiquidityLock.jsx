@@ -17,7 +17,7 @@ export default function LiquidityLock() {
   const [lpBalance, setLpBalance] = useState(null);
   const [percentageToLock, setPercentageToLock] = useState("");
   const [calculatedAmount, setCalculatedAmount] = useState("");
-  const [unlockDate, setUnlockDate] = useState("");
+  const [daysToLock, setDaysToLock] = useState(""); // Number of days to lock
   const [lockName, setLockName] = useState("");
   const [socialLink, setSocialLink] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
@@ -99,17 +99,8 @@ export default function LiquidityLock() {
       return false; // Invalid calculated amount
     }
 
-    if (!unlockDate) {
-      return false; // No unlock date set
-    }
-
-    const [month, day, year] = unlockDate.split('/');
-    const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    const selected = new Date(formattedDate + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selected <= today) {
-      return false; // Unlock date in the past
+    if (!daysToLock || isNaN(daysToLock) || daysToLock <= 0) {
+      return false; // Invalid days to lock
     }
 
     return true;
@@ -121,7 +112,8 @@ export default function LiquidityLock() {
       const signer = await provider.getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      const unlockTimestamp = Math.floor(new Date(unlockDate + "T00:00:00").getTime() / 1000);
+      // Calculate unlock timestamp by adding days to current date
+      const unlockTimestamp = Math.floor(new Date().getTime() / 1000) + (daysToLock * 24 * 60 * 60);
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
 
@@ -193,14 +185,16 @@ export default function LiquidityLock() {
           )}
         </div>
 
-        {/* Unlock Date */}
+        {/* Days to Lock */}
         <div className="space-y-2">
-          <label className="text-cyan-300 font-medium">Unlock Date</label>
+          <label className="text-cyan-300 font-medium">How many days do you want to lock?</label>
           <input
-            type="date"
-            value={unlockDate}
-            onChange={(e) => setUnlockDate(e.target.value)}
+            type="number"
+            value={daysToLock}
+            onChange={(e) => setDaysToLock(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+            placeholder="Please enter the number of days"
+            min={1}
           />
         </div>
 
