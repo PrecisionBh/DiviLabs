@@ -69,13 +69,14 @@ export default function LiquidityLock() {
   };
 
   const isValid = () => {
-    const today = new Date();
-    const selected = new Date(unlockDate);
+    const today = new Date().setHours(0, 0, 0, 0);
+    const selected = new Date(unlockDate).setHours(0, 0, 0, 0);
     return (
       lpAddress.startsWith("0x") &&
       !isNaN(parseFloat(percentageToLock)) &&
       parseFloat(percentageToLock) > 0 &&
       parseFloat(percentageToLock) <= 100 &&
+      unlockDate &&
       selected > today &&
       calculatedAmount > 0
     );
@@ -121,7 +122,7 @@ export default function LiquidityLock() {
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <label className="text-cyan-300 font-medium">Liquidity Pair Address</label>
+            <label className="text-cyan-300 font-medium">LP Token Address</label>
             <button onClick={fetchLpBalance} className="text-cyan-400 hover:text-cyan-300 text-sm">
               ➤ Fetch LP Balance
             </button>
