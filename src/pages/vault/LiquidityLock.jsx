@@ -190,20 +190,24 @@ export default function LiquidityLock() {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
+  
       const unlockTimestamp = Math.floor(new Date(unlockDate + "T00:00:00").getTime() / 1000);
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
-
+  
+      // Filter out empty or invalid addresses
+      const validMultiSigAddresses = multiSigAddresses.filter(addr => addr && addr.startsWith("0x"));
+      console.log("Valid Multi-Sig Addresses:", validMultiSigAddresses);
+  
       // Determine lock type based on multiSigAddresses length
-      const lockType = multiSigAddresses.length > 1 ? 1 : 0;
-
+      const lockType = validMultiSigAddresses.length > 1 ? 1 : 0;
+  
       const tx = await contract.lockTokens(
         lpAddress,
         amountInWei,
         unlockTimestamp,
         lockName,
-        multiSigAddresses,
+        validMultiSigAddresses,
         lockType, // Pass lock type based on multi-sig or not
         false, // NFT flag (optional)
         false, // Additional flag (optional)
@@ -212,14 +216,14 @@ export default function LiquidityLock() {
         socialLink, // Social link
         { value: fee } // Fee in BNB
       );
-
+  
       await tx.wait();
       alert("Liquidity successfully locked!");
     } catch (err) {
       console.error("Transaction failed:", err);
       alert("Transaction failed.");
     }
-  };
+  };  
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-12">
