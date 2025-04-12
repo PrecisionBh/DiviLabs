@@ -33,6 +33,7 @@ export default function LiquidityLock() {
     if (window.ethereum) {
       const provider = new BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
+      console.log("Connected Wallet:", accounts[0]);
       setWalletAddress(accounts[0]);
       setMultiSigAddresses([accounts[0]]);
     }
@@ -46,7 +47,7 @@ export default function LiquidityLock() {
       }
 
       if (!lpAddress.startsWith("0x") || !walletAddress) {
-        alert("Enter a valid LP address and connect your wallet.");
+        alert("Enter a valid LP token address and connect your wallet.");
         return;
       }
 
@@ -57,12 +58,13 @@ export default function LiquidityLock() {
       const decimals = await token.decimals();
 
       const divisor = BigInt(10) ** BigInt(decimals);
-      const formatted = Number(rawBalance * 10000n / divisor) / 10000;
+      const formatted = Number((rawBalance * 10000n) / divisor) / 10000;
 
+      console.log("LP Balance:", formatted);
       setLpBalance(formatted.toFixed(4));
     } catch (err) {
-      console.error("Full LP balance error:", err);
-      alert("Error fetching LP balance. Check console for details.");
+      console.error("Error fetching LP balance:", err);
+      alert("Error fetching LP balance. Check the console for details.");
     }
   };
 
