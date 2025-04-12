@@ -89,17 +89,21 @@ export default function LiquidityLock() {
   };
 
   const isValid = () => {
-    const today = new Date().setHours(0, 0, 0, 0);
-    const selected = new Date(unlockDate).setHours(0, 0, 0, 0);
-    return (
-      lpAddress.startsWith("0x") &&
-      !isNaN(parseFloat(percentageToLock)) &&
-      parseFloat(percentageToLock) > 0 &&
-      parseFloat(percentageToLock) <= 100 &&
-      unlockDate &&
-      selected > today &&
-      parseFloat(calculatedAmount) > 0
-    );
+    if (!lpAddress.startsWith("0x")) return false;
+
+    const percent = parseFloat(percentageToLock);
+    if (isNaN(percent) || percent <= 0 || percent > 100) return false;
+
+    const amount = parseFloat(calculatedAmount);
+    if (isNaN(amount) || amount <= 0) return false;
+
+    if (!unlockDate) return false;
+
+    const selected = new Date(unlockDate + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return selected > today;
   };
 
   const handleLock = async () => {
@@ -108,7 +112,7 @@ export default function LiquidityLock() {
       const signer = await provider.getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      const unlockTimestamp = Math.floor(new Date(unlockDate).getTime() / 1000);
+      const unlockTimestamp = Math.floor(new Date(unlockDate + "T00:00:00").getTime() / 1000);
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
 
