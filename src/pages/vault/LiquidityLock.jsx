@@ -3,84 +3,85 @@ import { BrowserProvider, Contract, parseUnits, parseEther } from "ethers";
 
 const CONTRACT_ADDRESS = "0x27Ce0569B5f865A1C1F6fA36D66cE07ca329ce35";
 const CONTRACT_ABI = [
-    {
-      "inputs": [
-        { "internalType": "address", "name": "_nft", "type": "address" }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
-      "name": "approveManualUnlock",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
-      "name": "claim",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
-      "name": "claimEmergencyUnlock",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
-      "name": "forceUnlockByOwner",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        { "internalType": "address", "name": "token", "type": "address" },
-        { "internalType": "uint256", "name": "amount", "type": "uint256" },
-        { "internalType": "uint256", "name": "unlockTime", "type": "uint256" },
-        { "internalType": "string", "name": "lockName", "type": "string" },
-        { "internalType": "address[]", "name": "unlockers", "type": "address[]" },
-        { "internalType": "uint8", "name": "lockType", "type": "uint8" },
-        { "internalType": "bool", "name": "withNFT", "type": "bool" },
-        { "internalType": "string", "name": "metadataURI", "type": "string" },
-        { "internalType": "string", "name": "website", "type": "string" },
-        { "internalType": "string", "name": "social", "type": "string" },
-        {
-          "components": [
-            { "internalType": "uint256", "name": "releaseTime", "type": "uint256" },
-            { "internalType": "uint256", "name": "amount", "type": "uint256" },
-            { "internalType": "bool", "name": "claimed", "type": "bool" }
-          ],
-          "internalType": "struct DiviVaultLockerV2.VestingCheckpoint[]",
-          "name": "checkpoints",
-          "type": "tuple[]"
-        }
-      ],
-      "name": "lockTokens",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
-      "name": "startEmergencyUnlock",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [{ "internalType": "address payable", "name": "to", "type": "address" }],
-      "name": "withdrawFees",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ];  
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_nft", "type": "address" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+    "name": "approveManualUnlock",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+    "name": "claim",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+    "name": "claimEmergencyUnlock",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+    "name": "forceUnlockByOwner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "uint256", "name": "unlockTime", "type": "uint256" },
+      { "internalType": "string", "name": "lockName", "type": "string" },
+      { "internalType": "address[]", "name": "unlockers", "type": "address[]" },
+      { "internalType": "uint8", "name": "lockType", "type": "uint8" },
+      { "internalType": "bool", "name": "withNFT", "type": "bool" },
+      { "internalType": "string", "name": "metadataURI", "type": "string" },
+      { "internalType": "string", "name": "website", "type": "string" },
+      { "internalType": "string", "name": "social", "type": "string" },
+      {
+        "components": [
+          { "internalType": "uint256", "name": "releaseTime", "type": "uint256" },
+          { "internalType": "uint256", "name": "amount", "type": "uint256" },
+          { "internalType": "bool", "name": "claimed", "type": "bool" }
+        ],
+        "internalType": "struct DiviVaultLockerV2.VestingCheckpoint[]",
+        "name": "checkpoints",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "lockTokens",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "lockId", "type": "uint256" }],
+    "name": "startEmergencyUnlock",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address payable", "name": "to", "type": "address" }],
+    "name": "withdrawFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)"
@@ -194,25 +195,28 @@ export default function LiquidityLock() {
       const amountInWei = parseUnits(calculatedAmount, 18);
       const fee = parseEther(totalCost);
 
+      // Determine lock type based on multiSigAddresses length
+      const lockType = multiSigAddresses.length > 1 ? 1 : 0;
+
       const tx = await contract.lockTokens(
         lpAddress,
         amountInWei,
         unlockTimestamp,
         lockName,
         multiSigAddresses,
-        multiSigAddresses.length > 1 ? multiSigAddresses.length : 0,
-        false,
-        false,
-        "",
-        websiteLink,
-        socialLink,
-        { value: fee }
+        lockType, // Pass lock type based on multi-sig or not
+        false, // NFT flag (optional)
+        false, // Additional flag (optional)
+        "", // Metadata URI (optional)
+        websiteLink, // Website link
+        socialLink, // Social link
+        { value: fee } // Fee in BNB
       );
 
       await tx.wait();
       alert("Liquidity successfully locked!");
     } catch (err) {
-      console.error(err);
+      console.error("Transaction failed:", err);
       alert("Transaction failed.");
     }
   };
@@ -222,6 +226,7 @@ export default function LiquidityLock() {
       <div className="max-w-2xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-cyan-400 text-center">Lock Liquidity Pair</h1>
 
+        {/* LP Token Address Section */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <label className="text-cyan-300 font-medium">LP Token Address</label>
@@ -241,6 +246,7 @@ export default function LiquidityLock() {
           )}
         </div>
 
+        {/* Percentage to Lock */}
         <div className="space-y-2">
           <label className="text-cyan-300 font-medium">Amount to Lock (%)</label>
           <input
@@ -257,6 +263,7 @@ export default function LiquidityLock() {
           )}
         </div>
 
+        {/* Unlock Date */}
         <div className="space-y-2">
           <label className="text-cyan-300 font-medium">Unlock Date</label>
           <input
@@ -267,6 +274,7 @@ export default function LiquidityLock() {
           />
         </div>
 
+        {/* Optional Lock Name */}
         <input
           type="text"
           value={lockName}
@@ -275,6 +283,7 @@ export default function LiquidityLock() {
           className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
         />
 
+        {/* Website and Social Links */}
         <input
           type="text"
           value={websiteLink}
@@ -282,7 +291,6 @@ export default function LiquidityLock() {
           placeholder="https://yourproject.com (optional)"
           className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
         />
-
         <input
           type="text"
           value={socialLink}
@@ -291,6 +299,7 @@ export default function LiquidityLock() {
           className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
         />
 
+        {/* Multi-Sig Wallet Addresses */}
         <div>
           <div className="flex items-center gap-2 mb-1">
             <label className="text-cyan-300 font-medium">Multi-Sig Wallets (optional)</label>
@@ -315,6 +324,7 @@ export default function LiquidityLock() {
           </button>
         </div>
 
+        {/* Display Multi-Sig Addresses */}
         {multiSigAddresses.length > 1 &&
           multiSigAddresses.slice(1).map((addr, index) => (
             <div key={index + 1} className="relative mb-3">
@@ -334,8 +344,10 @@ export default function LiquidityLock() {
             </div>
           ))}
 
+        {/* Estimated Fee */}
         <div className="text-cyan-200 font-bold text-lg mt-4">Estimated Fee: {totalCost} BNB</div>
 
+        {/* Lock Button */}
         <button
           onClick={handleLock}
           disabled={!isValid()}
