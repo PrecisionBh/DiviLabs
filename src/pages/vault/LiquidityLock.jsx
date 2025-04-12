@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { BrowserProvider, parseUnits, parseEther } from "ethers";
+import { BrowserProvider, Contract, parseUnits, parseEther } from "ethers";
 
 const CONTRACT_ADDRESS = "YOUR_LOCKER_CONTRACT_ADDRESS";
 const CONTRACT_ABI = [/* your contract ABI here */];
+const ERC20_ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
 
 export default function LiquidityLock() {
   const [walletAddress, setWalletAddress] = useState(null);
   const [lpAddress, setLpAddress] = useState("");
+  const [lpBalance, setLpBalance] = useState(null);
   const [percentageToLock, setPercentageToLock] = useState("");
+  const [calculatedAmount, setCalculatedAmount] = useState("");
   const [unlockDate, setUnlockDate] = useState("");
   const [lockName, setLockName] = useState("");
   const [socialLink, setSocialLink] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
-  const [lpBalance] = useState(10000);
-  const [calculatedAmount, setCalculatedAmount] = useState("");
   const [multiSigAddresses, setMultiSigAddresses] = useState([""]);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -34,10 +35,24 @@ export default function LiquidityLock() {
     }
   };
 
+  const fetchLpBalance = async () => {
+    try {
+      if (!lpAddress.startsWith("0x") || !walletAddress) return;
+      const provider = new BrowserProvider(window.ethereum);
+      const token = new Contract(lpAddress, ERC20_ABI, provider);
+      const rawBalance = await token.balanceOf(walletAddress);
+      const decimals = await token.decimals();
+      const formatted = parseFloat(rawBalance.toString()) / 10 ** decimals;
+      setLpBalance(formatted.toFixed(2));
+    } catch (err) {
+      console.error("Failed to fetch LP balance", err);
+    }
+  };
+
   const handlePercentageChange = (value) => {
     const percent = parseFloat(value);
     setPercentageToLock(value);
-    if (!isNaN(percent) && percent >= 1 && percent <= 100) {
+    if (!isNaN(percent) && percent >= 1 && percent <= 100 && lpBalance !== null) {
       const amount = ((lpBalance * percent) / 100).toFixed(2);
       setCalculatedAmount(amount);
     } else {
@@ -45,33 +60,32 @@ export default function LiquidityLock() {
     }
   };
 
-  const handleAddAddress = () => {
-    setMultiSigAddresses([...multiSigAddresses, ""]);
-  };
-
+  const handleAddAddress = () => setMultiSigAddresses([...multiSigAddresses, ""]);
+  const handleRemoveAddress = (index) => setMultiSigAddresses(multiSigAddresses.filter((_, i) => i !== index));
   const handleAddressChange = (index, value) => {
     const updated = [...multiSigAddresses];
     updated[index] = value;
     setMultiSigAddresses(updated);
   };
 
-  const handleRemoveAddress = (index) => {
-    const updated = [...multiSigAddresses];
-    updated.splice(index, 1);
-    setMultiSigAddresses(updated);
+  const isValid = () => {
+    const today = new Date();
+    const selected = new Date(unlockDate);
+    return (
+      lpAddress.startsWith("0x") &&
+      !isNaN(parseFloat(percentageToLock)) &&
+      parseFloat(percentageToLock) > 0 &&
+      parseFloat(percentageToLock) <= 100 &&
+      selected > today &&
+      calculatedAmount > 0
+    );
   };
-
-  const isValid = () =>
-    lpAddress.startsWith("0x") &&
-    !isNaN(parseFloat(percentageToLock)) &&
-    unlockDate &&
-    calculatedAmount > 0;
 
   const handleLock = async () => {
     try {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
       const unlockTimestamp = Math.floor(new Date(unlockDate).getTime() / 1000);
       const amountInWei = parseUnits(calculatedAmount, 18);
@@ -105,8 +119,13 @@ export default function LiquidityLock() {
       <div className="max-w-2xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-cyan-400 text-center">Lock Liquidity Pair</h1>
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">LP Token Address</label>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-cyan-300 font-medium">Liquidity Pair Address</label>
+            <button onClick={fetchLpBalance} className="text-cyan-400 hover:text-cyan-300 text-sm">
+              ➤ Fetch LP Balance
+            </button>
+          </div>
           <input
             type="text"
             value={lpAddress}
@@ -116,22 +135,24 @@ export default function LiquidityLock() {
           />
         </div>
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Amount to Lock (%)</label>
+        <div className="space-y-2">
+          <label className="text-cyan-300 font-medium">Amount to Lock (%)</label>
           <input
             type="number"
             value={percentageToLock}
             onChange={(e) => handlePercentageChange(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
             placeholder="Enter % (1-100)"
+            min={1}
+            max={100}
           />
           {calculatedAmount && (
-            <p className="text-cyan-200 text-sm">You are locking {calculatedAmount} LP tokens</p>
+            <p className="text-cyan-200 text-sm">You are locking: {calculatedAmount} LP Tokens</p>
           )}
         </div>
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Unlock Date</label>
+        <div className="space-y-2">
+          <label className="text-cyan-300 font-medium">Unlock Date</label>
           <input
             type="date"
             value={unlockDate}
@@ -140,38 +161,29 @@ export default function LiquidityLock() {
           />
         </div>
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Optional Lock Name</label>
-          <input
-            type="text"
-            value={lockName}
-            onChange={(e) => setLockName(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="MyProject-LP"
-          />
-        </div>
+        <input
+          type="text"
+          value={lockName}
+          onChange={(e) => setLockName(e.target.value)}
+          placeholder="Optional Lock Name"
+          className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+        />
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Website</label>
-          <input
-            type="text"
-            value={websiteLink}
-            onChange={(e) => setWebsiteLink(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="https://yourproject.com"
-          />
-        </div>
+        <input
+          type="text"
+          value={websiteLink}
+          onChange={(e) => setWebsiteLink(e.target.value)}
+          placeholder="https://yourproject.com (optional)"
+          className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+        />
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Social Link</label>
-          <input
-            type="text"
-            value={socialLink}
-            onChange={(e) => setSocialLink(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="https://twitter.com/project"
-          />
-        </div>
+        <input
+          type="text"
+          value={socialLink}
+          onChange={(e) => setSocialLink(e.target.value)}
+          placeholder="https://twitter.com/project (optional)"
+          className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+        />
 
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -186,7 +198,7 @@ export default function LiquidityLock() {
           </div>
           {showTooltip && (
             <div className="bg-gray-800 text-white text-xs p-3 rounded-md mb-3 max-w-sm shadow-md">
-              Multi-sig means the locked tokens cannot be withdrawn until a minimum number of addresses (that you specify) approve the unlock. Divi Vault uses this system to give teams extra security by requiring group consensus before funds are released.
+              Multi-sig means the locked tokens cannot be withdrawn until <strong>all wallet addresses</strong> listed here approve the unlock. Divi Vault uses this system to ensure team funds require full consensus before release.
             </div>
           )}
           <button
@@ -216,9 +228,7 @@ export default function LiquidityLock() {
             </div>
           ))}
 
-        <div className="text-cyan-200 font-bold text-lg mt-4">
-          Estimated Fee: {totalCost} BNB
-        </div>
+        <div className="text-cyan-200 font-bold text-lg mt-4">Estimated Fee: {totalCost} BNB</div>
 
         <button
           onClick={handleLock}

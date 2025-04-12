@@ -5,6 +5,7 @@ import VaultLanding from "./pages/vault/VaultLanding";
 import ChainSelect from "./pages/vault/ChainSelect";
 import TokenTypeSelect from "./pages/vault/TokenTypeSelect";
 import LiquidityLock from "./pages/vault/LiquidityLock";
+import TeamTokenLock from "./pages/vault/TeamTokenLock"; // ✅ NEW ROUTE
 import PromoPage from "./pages/vault/PromoPage";
 import LoadingPage from "./pages/vault/LoadingPage";
 import VaultResultPage from "./pages/vault/VaultResultPage";
@@ -15,7 +16,7 @@ export default function App() {
     <Router>
       <ConnectWalletButton />
       <Routes>
-        {/* 🔹 Public Pages */}
+        {/* 🌐 Public Pages */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/ecosystem" element={<EcosystemHome />} />
 
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/vault/chain" element={<ChainSelect />} />
         <Route path="/vault/type" element={<TokenTypeSelect />} />
         <Route path="/vault/liquidity" element={<LiquidityLock />} />
+        <Route path="/vault/team" element={<TeamTokenLock />} /> {/* ✅ NEW */}
         <Route path="/vault/promo" element={<PromoPage />} />
         <Route path="/vault/loading" element={<LoadingPage />} />
         <Route path="/vault/result" element={<VaultResultPage />} />

@@ -48,11 +48,17 @@ export default function TeamTokenLock() {
   const multisigCost = 0.1 * (multiSigAddresses.length - 1);
   const totalCost = (baseCost + multisigCost).toFixed(2);
 
-  const isValid = () =>
-    tokenAddress.startsWith("0x") &&
-    !isNaN(parseFloat(lockAmount)) &&
-    parseFloat(lockAmount) > 0 &&
-    unlockDate;
+  const isValid = () => {
+    const today = new Date().setHours(0, 0, 0, 0);
+    const selectedDate = new Date(unlockDate).setHours(0, 0, 0, 0);
+    return (
+      tokenAddress.startsWith("0x") &&
+      !isNaN(parseFloat(lockAmount)) &&
+      parseFloat(lockAmount) > 0 &&
+      unlockDate &&
+      selectedDate > today
+    );
+  };
 
   const handleLock = async () => {
     try {
@@ -71,8 +77,8 @@ export default function TeamTokenLock() {
         lockName,
         multiSigAddresses,
         multiSigAddresses.length > 1 ? multiSigAddresses.length : 0,
-        false, // boost
-        false, // withNFT (set later)
+        false,
+        false,
         "",
         websiteLink,
         socialLink,
@@ -142,7 +148,7 @@ export default function TeamTokenLock() {
             value={websiteLink}
             onChange={(e) => setWebsiteLink(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="https://yourproject.com"
+            placeholder="https://yourproject.com (Optional)"
           />
         </div>
 
@@ -153,7 +159,7 @@ export default function TeamTokenLock() {
             value={socialLink}
             onChange={(e) => setSocialLink(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="https://twitter.com/project"
+            placeholder="https://twitter.com/project (Optional)"
           />
         </div>
 
@@ -170,8 +176,8 @@ export default function TeamTokenLock() {
           </div>
           {showTooltip && (
             <div className="bg-gray-800 text-white text-xs p-3 rounded-md mb-3 max-w-sm shadow-md">
-              Multi-sig means the locked tokens cannot be withdrawn until a minimum number of addresses (that you specify) approve the unlock. Divi Vault uses this system to give teams extra security by requiring group consensus before funds are released.
-            </div>
+            Multi-sig means the locked tokens cannot be withdrawn until <strong>all wallet addresses</strong> listed here approve the unlock. Divi Vault uses this system to ensure team funds require full consensus before release.
+          </div>          
           )}
           <button
             onClick={handleAddAddress}
