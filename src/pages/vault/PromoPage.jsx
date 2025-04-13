@@ -44,46 +44,66 @@ export default function PromoPage() {
         alert("Wallet or lock data not found.");
         return;
       }
-
+  
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
+  
       const userAddress = await signer.getAddress();
       const walletBalance = await provider.getBalance(userAddress);
       const fee = ethers.parseEther(totalCost.toString());
       const buffer = ethers.parseEther("0.005");
-
+  
       if (walletBalance < fee + buffer) {
         alert("⚠️ Not enough BNB to cover the fee + gas.");
         return;
       }
-
+  
       const unlockTimestamp = Math.floor(Date.now() / 1000) + (parseInt(lockData.daysToLock) * 86400);
-      const amountInWei = ethers.parseUnits(lockData.calculatedAmount.toString(), 18);
-
+      const amountInWei = ethers.parseUnits(lockData.calculatedAmount?.toString() || "0", 18);
+  
+      if (!lockData.lpAddress || amountInWei <= 0n) {
+        alert("Invalid lock amount or LP address.");
+        return;
+      }
+  
+      console.log("Submitting lockTokens with:", {
+        token: lockData.lpAddress,
+        amount: amountInWei.toString(),
+        unlockTimestamp,
+        name: lockData.lockName,
+        unlockers: [userAddress],
+        lockType: 0,
+        mintNFT: withNFT,
+        imageUrl: withNFT ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm" : "",
+        projectUrl: lockData.websiteLink,
+        socialLink: lockData.socialLink,
+        vesting: [],
+        value: fee.toString()
+      });
+  
       const tx = await contract.lockTokens(
         lockData.lpAddress,
         amountInWei,
         unlockTimestamp,
         lockData.lockName || "",
         [userAddress],
-        0, // LP lock
+        0,
         withNFT,
         withNFT ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm" : "",
         lockData.websiteLink || "",
         lockData.socialLink || "",
         [],
         { value: fee }
-      );      
-
+      );
+  
       await tx.wait();
       navigate("/vault/result?status=success");
     } catch (err) {
       console.error("Transaction failed:", err);
       navigate("/vault/result?status=fail");
     }
-  };
+  };  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-[#0c0f1a] text-white px-4 py-12 flex flex-col items-center space-y-12">
