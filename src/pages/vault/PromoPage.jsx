@@ -3,7 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 
 const CONTRACT_ADDRESS = "0xE309776Ba79F8a86DCa602338A26cCfd96073a2b"; // Your contract
-const CONTRACT_ABI = [ /* your full ABI here */ ];
+const CONTRACT_ABI = [ const CONTRACT_ABI = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "uint256", "name": "unlockTimestamp", "type": "uint256" },
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "address[]", "name": "unlockers", "type": "address[]" },
+      { "internalType": "uint8", "name": "lockType", "type": "uint8" },
+      { "internalType": "bool", "name": "mintNFT", "type": "bool" },
+      { "internalType": "string", "name": "imageUrl", "type": "string" },
+      { "internalType": "string", "name": "projectUrl", "type": "string" },
+      { "internalType": "string", "name": "socialLink", "type": "string" },
+      { "internalType": "uint256[]", "name": "vestingCheckpoints", "type": "uint256[]" }
+    ],
+    "name": "lockTokens",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+];
 
 export default function PromoPage() {
   const [withNFT, setWithNFT] = useState(false);

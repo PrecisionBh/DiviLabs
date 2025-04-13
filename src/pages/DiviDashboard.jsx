@@ -253,7 +253,7 @@ export default function DiviDashboard() {
               disabled
               className="w-full bg-gray-900 text-white p-3 rounded-xl mt-1 border border-cyan-600 cursor-not-allowed"
             />
-            <div className="text-xs text-gray-400 mt-1">~ Estimated DIVI after 6% tax</div>
+            <div className="text-xs text-gray-400 mt-1">~ Estimated DIVI </div>
           </div>
 
           {/* Swap Button */}
