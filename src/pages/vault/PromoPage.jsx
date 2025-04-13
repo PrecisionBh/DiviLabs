@@ -60,14 +60,20 @@ export default function PromoPage() {
       }
   
       const unlockTimestamp = Math.floor(Date.now() / 1000) + (parseInt(lockData.daysToLock) * 86400);
-      const amountInWei = ethers.parseUnits(lockData.calculatedAmount?.toString() || "0", 18);
+  
+      const rawAmount = lockData.calculatedAmount?.toString() || "0";
+      const amountInWei = ethers.parseUnits(rawAmount, 18);
+  
+      // Debug Logs
+      console.log("Calculated Amount (Raw):", rawAmount);
+      console.log("Amount in Wei:", amountInWei.toString());
+      console.log("LP Token Address:", lockData.lpAddress);
   
       if (!lockData.lpAddress || amountInWei <= 0n) {
-        alert("Invalid lock amount or LP address.");
+        alert("Invalid lock amount or LP token address.");
         return;
       }
   
-      // Fallback values to avoid revert errors
       const name = lockData.lockName || "Divi Lock";
       const websiteLink = lockData.websiteLink || "https://divilabs.ai";
       const socialLink = lockData.socialLink || "https://x.com/DiviOfficial";
@@ -112,7 +118,8 @@ export default function PromoPage() {
       navigate("/vault/result?status=fail");
     }
   };
-    
+  
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-[#0c0f1a] text-white px-4 py-12 flex flex-col items-center space-y-12">
       <h1 className="text-4xl font-extrabold text-cyan-400 drop-shadow-lg">Promote Your Lock</h1>
