@@ -67,17 +67,25 @@ export default function PromoPage() {
         return;
       }
   
+      // Fallback values to avoid revert errors
+      const name = lockData.lockName || "Divi Lock";
+      const websiteLink = lockData.websiteLink || "https://divilabs.ai";
+      const socialLink = lockData.socialLink || "https://x.com/DiviOfficial";
+      const imageUrl = withNFT
+        ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm"
+        : "";
+  
       console.log("Submitting lockTokens with:", {
         token: lockData.lpAddress,
         amount: amountInWei.toString(),
         unlockTimestamp,
-        name: lockData.lockName,
+        name,
         unlockers: [userAddress],
         lockType: 0,
         mintNFT: withNFT,
-        imageUrl: withNFT ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm" : "",
-        projectUrl: lockData.websiteLink,
-        socialLink: lockData.socialLink,
+        imageUrl,
+        projectUrl: websiteLink,
+        socialLink,
         vesting: [],
         value: fee.toString()
       });
@@ -86,13 +94,13 @@ export default function PromoPage() {
         lockData.lpAddress,
         amountInWei,
         unlockTimestamp,
-        lockData.lockName || "",
+        name,
         [userAddress],
         0,
         withNFT,
-        withNFT ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm" : "",
-        lockData.websiteLink || "",
-        lockData.socialLink || "",
+        imageUrl,
+        websiteLink,
+        socialLink,
         [],
         { value: fee }
       );
@@ -103,8 +111,8 @@ export default function PromoPage() {
       console.error("Transaction failed:", err);
       navigate("/vault/result?status=fail");
     }
-  };  
-
+  };
+    
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-[#0c0f1a] text-white px-4 py-12 flex flex-col items-center space-y-12">
       <h1 className="text-4xl font-extrabold text-cyan-400 drop-shadow-lg">Promote Your Lock</h1>
