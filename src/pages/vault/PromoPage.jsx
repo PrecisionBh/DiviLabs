@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 
-const CONTRACT_ADDRESS = "0xE309776Ba79F8a86DCa602338A26cCfd96073a2b"; // Your contract
-const CONTRACT_ABI = [ const CONTRACT_ABI = [
+const CONTRACT_ADDRESS = "const CONTRACT_ADDRESS = "0x27Ce0569B5f865A1C1F6fA36D66cE07ca329ce35";"; // Your contract
+const CONTRACT_ABI = [
   {
     "inputs": [
       { "internalType": "address", "name": "token", "type": "address" },
@@ -11,7 +11,7 @@ const CONTRACT_ABI = [ const CONTRACT_ABI = [
       { "internalType": "uint256", "name": "unlockTimestamp", "type": "uint256" },
       { "internalType": "string", "name": "name", "type": "string" },
       { "internalType": "address[]", "name": "unlockers", "type": "address[]" },
-      { "internalType": "uint8", "name": "lockType", "type": "uint8" },
+      { "internalType": "uint8", "name": "lockType", "type": "uint8" }, // 0 = LP, 1 = team tokens
       { "internalType": "bool", "name": "mintNFT", "type": "bool" },
       { "internalType": "string", "name": "imageUrl", "type": "string" },
       { "internalType": "string", "name": "projectUrl", "type": "string" },
@@ -24,6 +24,7 @@ const CONTRACT_ABI = [ const CONTRACT_ABI = [
     "type": "function"
   }
 ];
+
 
 export default function PromoPage() {
   const [withNFT, setWithNFT] = useState(false);
@@ -67,14 +68,14 @@ export default function PromoPage() {
         unlockTimestamp,
         lockData.lockName || "",
         [userAddress],
-        0,
+        0, // LP lock
         withNFT,
         withNFT ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm" : "",
         lockData.websiteLink || "",
         lockData.socialLink || "",
         [],
         { value: fee }
-      );
+      );      
 
       await tx.wait();
       navigate("/vault/result?status=success");
