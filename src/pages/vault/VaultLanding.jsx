@@ -6,12 +6,20 @@ export default function VaultLanding() {
   const navigate = useNavigate();
   const { walletAddress, connectWallet } = useWallet();
 
-  const handleClick = async () => {
+  const handleStartLock = async () => {
     if (!walletAddress) {
       await connectWallet();
       return;
     }
     navigate("/vault/chain");
+  };
+
+  const handleClaimLock = async () => {
+    if (!walletAddress) {
+      await connectWallet();
+      return;
+    }
+    navigate("/vault/claim");
   };
 
   return (
@@ -27,13 +35,24 @@ export default function VaultLanding() {
         Page 1 of 9 — Vault Process Begins Here.
       </div>
 
+      {/* Start Lock Button */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={handleClick}
+        onClick={handleStartLock}
         className="mt-10 px-8 py-3 bg-[#00E5FF] text-black font-semibold rounded-full shadow-[0_0_15px_#00E5FF] hover:shadow-[0_0_25px_#00E5FF] transition-all"
       >
         {walletAddress ? "Start Lock" : "Connect Wallet"}
+      </motion.button>
+
+      {/* Claim Lock Glowing Button */}
+      <motion.button
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.96 }}
+        onClick={handleClaimLock}
+        className="mt-4 px-10 py-3 bg-[#0f1929] text-[#00E5FF] font-extrabold rounded-full shadow-[0_0_25px_#00E5FF] hover:shadow-[0_0_45px_#00E5FF] border border-[#00E5FF] transition-all animate-pulse"
+      >
+        🔓 Claim Your Lock
       </motion.button>
     </div>
   );
