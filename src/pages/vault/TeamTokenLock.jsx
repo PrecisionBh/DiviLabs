@@ -1,95 +1,78 @@
-import React, { useEffect, useState } from "react";
-import { BrowserProvider, parseUnits, parseEther } from "ethers";
-
-const CONTRACT_ADDRESS = "YOUR_LOCKER_CONTRACT_ADDRESS";
-const CONTRACT_ABI = [/* your contract ABI here */];
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { BrowserProvider, Contract } from "ethers";
 
 export default function TeamTokenLock() {
-  const [walletAddress, setWalletAddress] = useState(null);
+  const navigate = useNavigate();
+
   const [tokenAddress, setTokenAddress] = useState("");
-  const [lockAmount, setLockAmount] = useState("");
-  const [unlockDate, setUnlockDate] = useState("");
+  const [tokenBalance, setTokenBalance] = useState(null);
+  const [percentageToLock, setPercentageToLock] = useState("");
+  const [calculatedAmount, setCalculatedAmount] = useState("");
+  const [daysToLock, setDaysToLock] = useState("");
   const [lockName, setLockName] = useState("");
   const [socialLink, setSocialLink] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
-  const [multiSigAddresses, setMultiSigAddresses] = useState([""]);
-  const [showTooltip, setShowTooltip] = useState(false);
 
-  useEffect(() => {
-    connectWallet();
-  }, []);
+  const baseCost = 0.25;
+  const totalCost = baseCost.toFixed(2);
 
-  const connectWallet = async () => {
-    if (window.ethereum) {
-      const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      setWalletAddress(accounts[0]);
-      setMultiSigAddresses([accounts[0]]);
+  const handlePercentageChange = (value) => {
+    setPercentageToLock(value);
+    const percent = parseFloat(value);
+
+    if (!isNaN(percent) && percent >= 1 && percent <= 100 && tokenBalance !== null) {
+      const balance = Number(tokenBalance);
+      const amount = ((balance * percent) / 100).toFixed(4);
+      setCalculatedAmount(amount);
+    } else {
+      setCalculatedAmount("");
     }
   };
 
-  const handleAddAddress = () => {
-    setMultiSigAddresses([...multiSigAddresses, ""]);
-  };
-
-  const handleAddressChange = (index, value) => {
-    const updated = [...multiSigAddresses];
-    updated[index] = value;
-    setMultiSigAddresses(updated);
-  };
-
-  const handleRemoveAddress = (index) => {
-    const updated = [...multiSigAddresses];
-    updated.splice(index, 1);
-    setMultiSigAddresses(updated);
-  };
-
-  const baseCost = 0.25;
-  const multisigCost = 0.1 * (multiSigAddresses.length - 1);
-  const totalCost = (baseCost + multisigCost).toFixed(2);
-
-  const isValid = () => {
-    const today = new Date().setHours(0, 0, 0, 0);
-    const selectedDate = new Date(unlockDate).setHours(0, 0, 0, 0);
-    return (
-      tokenAddress.startsWith("0x") &&
-      !isNaN(parseFloat(lockAmount)) &&
-      parseFloat(lockAmount) > 0 &&
-      unlockDate &&
-      selectedDate > today
-    );
-  };
-
-  const handleLock = async () => {
+  const fetchTokenBalance = async () => {
     try {
+      if (!window.ethereum) {
+        alert("MetaMask not found");
+        return;
+      }
+
+      if (!tokenAddress.startsWith("0x")) {
+        alert("Enter a valid token address.");
+        return;
+      }
+
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const address = await signer.getAddress();
 
-      const unlockTimestamp = Math.floor(new Date(unlockDate).getTime() / 1000);
-      const amountInWei = parseUnits(lockAmount, 18);
-      const costInWei = parseEther(totalCost);
+      const contract = new Contract(tokenAddress, ["function balanceOf(address) view returns (uint256)"], provider);
+      const rawBalance = await contract.balanceOf(address);
+      const formatted = Number(rawBalance.toString()) / 1e18;
 
-      const tx = await contract.lockTokens(
+      setTokenBalance(formatted);
+    } catch (err) {
+      console.error("Error fetching token balance:", err);
+      alert("Error fetching token balance.");
+    }
+  };
+
+  const handleLock = () => {
+    if (tokenBalance && calculatedAmount && daysToLock) {
+      const lockData = {
         tokenAddress,
-        amountInWei,
-        unlockTimestamp,
+        tokenBalance,
+        percentageToLock,
+        calculatedAmount,
+        daysToLock,
         lockName,
-        multiSigAddresses,
-        multiSigAddresses.length > 1 ? multiSigAddresses.length : 0,
-        false,
-        false,
-        "",
         websiteLink,
         socialLink,
-        { value: costInWei }
-      );
-
-      await tx.wait();
-      alert("Team tokens successfully locked!");
-    } catch (err) {
-      console.error(err);
-      alert("Transaction failed.");
+      };
+      localStorage.setItem("diviTeamLockData", JSON.stringify(lockData));
+      navigate("/vault/promo");
+    } else {
+      alert("Please fill in all fields correctly.");
     }
   };
 
@@ -98,8 +81,13 @@ export default function TeamTokenLock() {
       <div className="max-w-2xl mx-auto space-y-8">
         <h1 className="text-4xl font-bold text-cyan-400 text-center">Lock Team Tokens</h1>
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Token Address</label>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-cyan-300 font-medium">Token Address</label>
+            <button onClick={fetchTokenBalance} className="text-cyan-400 hover:text-cyan-300 text-sm">
+              ➤ Fetch Token Balance
+            </button>
+          </div>
           <input
             type="text"
             value={tokenAddress}
@@ -107,121 +95,70 @@ export default function TeamTokenLock() {
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
             placeholder="0x..."
           />
+          {tokenBalance !== null && (
+            <p className="text-cyan-200 text-sm mt-1">Wallet Token Balance: {tokenBalance} tokens</p>
+          )}
         </div>
 
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Amount to Lock</label>
+        <div className="space-y-2">
+          <label className="text-cyan-300 font-medium">Amount to Lock (%)</label>
           <input
             type="number"
-            value={lockAmount}
-            onChange={(e) => setLockAmount(e.target.value)}
+            value={percentageToLock}
+            onChange={(e) => handlePercentageChange(e.target.value)}
             className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="Enter token amount"
+            placeholder="Enter % (1-100)"
+            min={1}
+            max={100}
           />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Unlock Date</label>
-          <input
-            type="date"
-            value={unlockDate}
-            onChange={(e) => setUnlockDate(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-          />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Optional Lock Name</label>
-          <input
-            type="text"
-            value={lockName}
-            onChange={(e) => setLockName(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="MyTeam-Lock"
-          />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Website</label>
-          <input
-            type="text"
-            value={websiteLink}
-            onChange={(e) => setWebsiteLink(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="https://yourproject.com (Optional)"
-          />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-cyan-300 font-medium">Social Link</label>
-          <input
-            type="text"
-            value={socialLink}
-            onChange={(e) => setSocialLink(e.target.value)}
-            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-            placeholder="https://twitter.com/project (Optional)"
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <label className="text-cyan-300 font-medium">Multi-Sig Wallets (optional)</label>
-            <button
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              className="text-cyan-400 text-sm"
-            >
-              ?
-            </button>
-          </div>
-          {showTooltip && (
-            <div className="bg-gray-800 text-white text-xs p-3 rounded-md mb-3 max-w-sm shadow-md">
-            Multi-sig means the locked tokens cannot be withdrawn until <strong>all wallet addresses</strong> listed here approve the unlock. Divi Vault uses this system to ensure team funds require full consensus before release.
-          </div>          
+          {calculatedAmount && (
+            <p className="text-cyan-200 text-sm">You are locking: {calculatedAmount} Tokens</p>
           )}
-          <button
-            onClick={handleAddAddress}
-            className="text-sm text-cyan-400 hover:underline mb-3 block text-left"
-          >
-            + Add Multi-Sig Wallet (+0.1 BNB)
-          </button>
         </div>
 
-        {multiSigAddresses.length > 1 &&
-          multiSigAddresses.slice(1).map((addr, index) => (
-            <div key={index + 1} className="relative mb-3">
-              <input
-                type="text"
-                value={addr}
-                onChange={(e) => handleAddressChange(index + 1, e.target.value)}
-                className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
-                placeholder="0x..."
-              />
-              <button
-                onClick={() => handleRemoveAddress(index + 1)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-red-400"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-
-        <div className="text-cyan-200 font-bold text-lg mt-4">
-          Estimated Fee: {totalCost} BNB
+        <div className="space-y-2">
+          <label className="text-cyan-300 font-medium">How many days do you want to lock?</label>
+          <input
+            type="number"
+            value={daysToLock}
+            onChange={(e) => setDaysToLock(e.target.value)}
+            className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+            placeholder="Please enter the number of days"
+            min={1}
+          />
         </div>
+
+        <input
+          type="text"
+          value={lockName}
+          onChange={(e) => setLockName(e.target.value)}
+          placeholder="Optional Lock Name"
+          className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+        />
+
+        <input
+          type="text"
+          value={websiteLink}
+          onChange={(e) => setWebsiteLink(e.target.value)}
+          placeholder="https://yourproject.com (optional)"
+          className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+        />
+        <input
+          type="text"
+          value={socialLink}
+          onChange={(e) => setSocialLink(e.target.value)}
+          placeholder="https://twitter.com/project (optional)"
+          className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
+        />
 
         <button
           onClick={handleLock}
-          disabled={!isValid()}
-          className={`w-full py-3 mt-6 rounded-xl font-bold transition ${
-            isValid()
-              ? "bg-cyan-500 hover:bg-cyan-600 text-black"
-              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-          }`}
+          className="w-full py-3 mt-6 rounded-xl font-bold bg-cyan-500 hover:bg-cyan-600 text-black"
         >
-          Approve & Lock Team Tokens
+          Proceed to Last Step
         </button>
       </div>
     </div>
   );
 }
+

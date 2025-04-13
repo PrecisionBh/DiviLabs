@@ -1,14 +1,67 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ethers } from "ethers";
+
+const CONTRACT_ADDRESS = "0xE309776Ba79F8a86DCa602338A26cCfd96073a2b"; // Your contract
+const CONTRACT_ABI = [ /* your full ABI here */ ];
 
 export default function PromoPage() {
   const [withNFT, setWithNFT] = useState(false);
+  const [lockData, setLockData] = useState(null);
   const navigate = useNavigate();
 
   const totalCost = withNFT ? 1.0 : 0.25;
 
-  const handleConfirm = () => {
-    navigate("/vault/loading");
+  useEffect(() => {
+    const stored = localStorage.getItem("diviLockData");
+    if (stored) setLockData(JSON.parse(stored));
+  }, []);
+
+  const handleConfirm = async () => {
+    try {
+      if (!window.ethereum || !lockData) {
+        alert("Wallet or lock data not found.");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      const userAddress = await signer.getAddress();
+      const walletBalance = await provider.getBalance(userAddress);
+      const fee = ethers.parseEther(totalCost.toString());
+      const buffer = ethers.parseEther("0.005");
+
+      if (walletBalance < fee + buffer) {
+        alert("⚠️ Not enough BNB to cover the fee + gas.");
+        return;
+      }
+
+      const unlockTimestamp = Math.floor(Date.now() / 1000) + (parseInt(lockData.daysToLock) * 86400);
+      const amountInWei = ethers.parseUnits(lockData.calculatedAmount.toString(), 18);
+
+      const tx = await contract.lockTokens(
+        lockData.lpAddress,
+        amountInWei,
+        unlockTimestamp,
+        lockData.lockName || "",
+        [userAddress],
+        0,
+        withNFT,
+        withNFT ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm" : "",
+        lockData.websiteLink || "",
+        lockData.socialLink || "",
+        [],
+        { value: fee }
+      );
+
+      await tx.wait();
+      navigate("/vault/result?status=success");
+    } catch (err) {
+      console.error("Transaction failed:", err);
+      navigate("/vault/result?status=fail");
+    }
   };
 
   return (
@@ -35,8 +88,7 @@ export default function PromoPage() {
         </div>
 
         <div className="text-sm text-orange-300 font-medium">
-          ⚠️ Once you confirm, your tokens will be locked permanently until the unlock date. This
-          action cannot be undone.
+          ⚠️ Once you confirm, your tokens will be locked permanently until the unlock date.
         </div>
 
         <button
@@ -50,10 +102,12 @@ export default function PromoPage() {
       {/* NFT Example Preview */}
       <div className="mt-4 text-center">
         <p className="text-cyan-300 mb-4 font-semibold text-xl">Example Promotion NFT</p>
-
+        <div className="text-sm text-gray-400 max-w-sm mx-auto mb-2">
+          This NFT is minted to your wallet as proof your lock exists on-chain.
+        </div>
         <div className="relative w-[330px] md:w-[360px] rounded-2xl overflow-hidden border-2 border-cyan-500 shadow-[0_0_20px_#00e5ff80] bg-black">
           <img
-            src="https://w3s.link/ipfs/bafybeiagaaxs3ljdlqaz4deipb6e6y3rimkrri7zbvdum6zisffiqjdf7a"
+            src="https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm"
             alt="Divi Vault NFT"
             className="w-full h-[450px] object-cover opacity-95"
           />

@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function LandingPage() {
+  console.log("LandingPage rendered");
+
   return (
     <div className="min-h-screen bg-[#070B17] text-[#00E5FF] px-4 py-8 md:px-6 md:py-12 flex flex-col items-center justify-center relative overflow-hidden space-y-20">
       <div className="text-center w-full">
