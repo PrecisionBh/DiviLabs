@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ethers } from "ethers";
 
 const CONTRACT_ADDRESS = "0x27Ce0569B5f865A1C1F6fA36D66cE07ca329ce35";
+
 const CONTRACT_ABI = [
   {
     "inputs": [
@@ -11,7 +12,7 @@ const CONTRACT_ABI = [
       { "internalType": "uint256", "name": "unlockTimestamp", "type": "uint256" },
       { "internalType": "string", "name": "name", "type": "string" },
       { "internalType": "address[]", "name": "unlockers", "type": "address[]" },
-      { "internalType": "uint8", "name": "lockType", "type": "uint8" }, // 0 = LP, 1 = team tokens
+      { "internalType": "uint8", "name": "lockType", "type": "uint8" },
       { "internalType": "bool", "name": "mintNFT", "type": "bool" },
       { "internalType": "string", "name": "imageUrl", "type": "string" },
       { "internalType": "string", "name": "projectUrl", "type": "string" },
@@ -25,6 +26,9 @@ const CONTRACT_ABI = [
   }
 ];
 
+const LP_ABI = [
+  "function approve(address spender, uint256 amount) public returns (bool)"
+];
 
 export default function PromoPage() {
   const [withNFT, setWithNFT] = useState(false);
@@ -38,49 +42,65 @@ export default function PromoPage() {
     if (stored) setLockData(JSON.parse(stored));
   }, []);
 
+  const handleApprove = async () => {
+    try {
+      if (!window.ethereum || !lockData?.lpAddress) {
+        alert("Wallet or LP token address not found.");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const lp = new ethers.Contract(lockData.lpAddress, LP_ABI, signer);
+      const approveAmount = ethers.MaxUint256;
+
+      const tx = await lp.approve(CONTRACT_ADDRESS, approveAmount);
+      await tx.wait();
+
+      alert("✅ LP token approved successfully!");
+    } catch (err) {
+      console.error("Approval failed:", err);
+      alert("❌ Approval transaction failed.");
+    }
+  };
+
   const handleConfirm = async () => {
     try {
       if (!window.ethereum || !lockData) {
         alert("Wallet or lock data not found.");
         return;
       }
-  
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-  
+
       const userAddress = await signer.getAddress();
       const walletBalance = await provider.getBalance(userAddress);
       const fee = ethers.parseEther(totalCost.toString());
       const buffer = ethers.parseEther("0.005");
-  
+
       if (walletBalance < fee + buffer) {
         alert("⚠️ Not enough BNB to cover the fee + gas.");
         return;
       }
-  
+
       const unlockTimestamp = Math.floor(Date.now() / 1000) + (parseInt(lockData.daysToLock) * 86400);
-  
       const rawAmount = lockData.calculatedAmount?.toString() || "0";
       const amountInWei = ethers.parseUnits(rawAmount, 18);
-  
-      // Debug Logs
-      console.log("Calculated Amount (Raw):", rawAmount);
-      console.log("Amount in Wei:", amountInWei.toString());
-      console.log("LP Token Address:", lockData.lpAddress);
-  
+
       if (!lockData.lpAddress || amountInWei <= 0n) {
         alert("Invalid lock amount or LP token address.");
         return;
       }
-  
+
       const name = lockData.lockName || "Divi Lock";
       const websiteLink = lockData.websiteLink || "https://divilabs.ai";
       const socialLink = lockData.socialLink || "https://x.com/DiviOfficial";
       const imageUrl = withNFT
         ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm"
         : "";
-  
+
       console.log("Submitting lockTokens with:", {
         token: lockData.lpAddress,
         amount: amountInWei.toString(),
@@ -95,7 +115,7 @@ export default function PromoPage() {
         vesting: [],
         value: fee.toString()
       });
-  
+
       const tx = await contract.lockTokens(
         lockData.lpAddress,
         amountInWei,
@@ -110,7 +130,7 @@ export default function PromoPage() {
         [],
         { value: fee }
       );
-  
+
       await tx.wait();
       navigate("/vault/result?status=success");
     } catch (err) {
@@ -118,7 +138,6 @@ export default function PromoPage() {
       navigate("/vault/result?status=fail");
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-[#0c0f1a] text-white px-4 py-12 flex flex-col items-center space-y-12">
@@ -146,6 +165,13 @@ export default function PromoPage() {
         <div className="text-sm text-orange-300 font-medium">
           ⚠️ Once you confirm, your tokens will be locked permanently until the unlock date.
         </div>
+
+        <button
+          onClick={handleApprove}
+          className="w-full px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white font-bold rounded-xl shadow-lg transition"
+        >
+          Approve LP Tokens
+        </button>
 
         <button
           onClick={handleConfirm}
