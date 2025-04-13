@@ -9,22 +9,21 @@ import ChainSelect from './pages/vault/ChainSelect';
 import TokenTypeSelect from './pages/vault/TokenTypeSelect';
 import LiquidityLock from './pages/vault/LiquidityLock';
 import TeamTokenLock from './pages/vault/TeamTokenLock';
-import PromoPage from './pages/vault/PromoPage'; // This is your promo page
+import PromoPage from './pages/vault/PromoPage';
 import LoadingPage from './pages/vault/LoadingPage';
 import VaultResultPage from './pages/vault/VaultResultPage';
-import ConnectWalletButton from './components/ConnectWalletButton'; // Ensure this works
+import DiviDashboard from './pages/DiviDashboard'; // Import your dashboard
+import ConnectWalletButton from './components/ConnectWalletButton';
 
 export default function App() {
   return (
-    <Router> {/* Wrap the entire app with Router */}
-      {/* Your global Connect Wallet Button */}
+    <Router>
       <ConnectWalletButton />
-      
-      {/* Set up your Routes here */}
       <Routes>
         {/* Public pages */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/ecosystem" element={<EcosystemHome />} />
+        <Route path="/dashboard" element={<DiviDashboard />} />
 
         {/* Vault Flow */}
         <Route path="/vault" element={<Navigate to="/vault/start" />} />
@@ -33,7 +32,7 @@ export default function App() {
         <Route path="/vault/type" element={<TokenTypeSelect />} />
         <Route path="/vault/liquidity" element={<LiquidityLock />} />
         <Route path="/vault/team" element={<TeamTokenLock />} />
-        <Route path="/vault/promo" element={<PromoPage />} /> {/* Promo page */}
+        <Route path="/vault/promo" element={<PromoPage />} />
         <Route path="/vault/loading" element={<LoadingPage />} />
         <Route path="/vault/result" element={<VaultResultPage />} />
       </Routes>

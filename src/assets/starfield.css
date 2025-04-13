@@ -1,0 +1,44 @@
+/* Fullscreen Starfield Background */
+.starfield {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+    z-index: 0;
+  }
+  
+  /* Dim Cyan Stars – gently pulsing, never fading out */
+  .star {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    background: cyan;
+    opacity: 0.25;
+    animation: pulseSoft 4s infinite ease-in-out;
+  }
+  
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 0.25; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(1.2); }
+  }
+  
+  /* Bright Glowing Stars */
+  .star-bright {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: cyan;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #00e5ff, 0 0 24px #00e5ff80;
+    opacity: 0.85;
+    animation: pulse-glow 2s infinite alternate;
+  }
+  
+  @keyframes pulse-glow {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.2); opacity: 1; }
+  }
+  
