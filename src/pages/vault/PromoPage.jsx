@@ -17,7 +17,16 @@ const CONTRACT_ABI = [
       { "internalType": "string", "name": "imageUrl", "type": "string" },
       { "internalType": "string", "name": "projectUrl", "type": "string" },
       { "internalType": "string", "name": "socialLink", "type": "string" },
-      { "internalType": "uint256[]", "name": "vestingCheckpoints", "type": "uint256[]" }
+      {
+        "internalType": "struct DiviVaultLockerV2.VestingCheckpoint[]",
+        "name": "checkpoints",
+        "type": "tuple[]",
+        "components": [
+          { "internalType": "uint256", "name": "releaseTime", "type": "uint256" },
+          { "internalType": "uint256", "name": "amount", "type": "uint256" },
+          { "internalType": "bool", "name": "claimed", "type": "bool" }
+        ]
+      }
     ],
     "name": "lockTokens",
     "outputs": [],
@@ -101,6 +110,8 @@ export default function PromoPage() {
         ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm"
         : "";
 
+      const emptyVestingStruct = [];
+
       console.log("Submitting lockTokens with:", {
         token: lockData.lpAddress,
         amount: amountInWei.toString(),
@@ -112,7 +123,7 @@ export default function PromoPage() {
         imageUrl,
         projectUrl: websiteLink,
         socialLink,
-        vesting: [],
+        vesting: emptyVestingStruct,
         value: fee.toString()
       });
 
@@ -127,7 +138,7 @@ export default function PromoPage() {
         imageUrl,
         websiteLink,
         socialLink,
-        [],
+        emptyVestingStruct,
         { value: fee }
       );
 
@@ -181,7 +192,6 @@ export default function PromoPage() {
         </button>
       </div>
 
-      {/* NFT Example Preview */}
       <div className="mt-4 text-center">
         <p className="text-cyan-300 mb-4 font-semibold text-xl">Example Promotion NFT</p>
         <div className="text-sm text-gray-400 max-w-sm mx-auto mb-2">
