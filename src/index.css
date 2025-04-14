@@ -28,3 +28,15 @@
   0%, 100% { opacity: 0.2; }
   50% { opacity: 1; }
 }
+
+/* --- Remove spinner arrows from number inputs (Chrome, Safari, Edge) --- */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* --- Remove spinner arrows from number inputs (Firefox) --- */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
