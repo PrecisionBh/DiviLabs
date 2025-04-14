@@ -111,8 +111,9 @@ export default function DiviDashboard() {
 
   return (
     <div className="min-h-screen bg-[#060a13] text-white relative overflow-hidden px-6 py-10">
-      {/* Reflections Box */}
-      <div className="absolute top-6 left-6 z-50 text-cyan-300 text-sm">
+
+      {/* Reflections Box - Responsive */}
+      <div className="absolute top-6 left-6 z-50 text-cyan-300 text-sm max-w-[90%] sm:max-w-[250px]">
         <div className="font-semibold mb-1">Total Reflections Sent</div>
         <div className="bg-[#0e1016] border border-cyan-400 px-6 py-4 rounded-xl shadow-[0_0_15px_#00e5ff50] text-center">
           <div className="text-2xl font-bold text-white">${reflectionsUSD}</div>
@@ -129,7 +130,7 @@ export default function DiviDashboard() {
       </div>
 
       {/* Metrics */}
-      <div className="flex justify-center gap-10 text-cyan-300 text-sm font-semibold mb-10">
+      <div className="flex justify-center gap-6 md:gap-10 text-cyan-300 text-sm font-semibold mb-10 flex-wrap text-center">
         <div>Price: ${price}</div>
         <div>LP: ${liquidity}</div>
         <div>Market Cap: ${marketCap}</div>
@@ -138,7 +139,9 @@ export default function DiviDashboard() {
 
       {/* Swap Box */}
       <div className="flex justify-center z-10 relative">
-        <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-6 shadow-[0_0_40px_#00e5ff90] w-[420px] space-y-6">
+        <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-6 shadow-[0_0_40px_#00e5ff90] w-full max-w-[420px] space-y-6">
+
+          {/* Input Box */}
           <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 shadow-[0_0_25px_#00e5ff60] flex items-center justify-between">
             <span className="text-white font-semibold text-base">{isSelling ? "DIVI" : "BNB"}</span>
             <input
@@ -163,6 +166,7 @@ export default function DiviDashboard() {
             </button>
           </div>
 
+          {/* Output Box */}
           <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 shadow-[0_0_25px_#00e5ff60] flex items-center justify-between">
             <span className="text-white font-semibold text-base">{isSelling ? "BNB" : "DIVI"}</span>
             <input
@@ -180,7 +184,7 @@ export default function DiviDashboard() {
         </div>
       </div>
 
-      {/* Tokenomics Button */}
+      {/* Token Info Button */}
       <div className="flex justify-center mt-8">
         <a
           href="/token-info"
