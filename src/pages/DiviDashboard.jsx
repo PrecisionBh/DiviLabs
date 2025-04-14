@@ -113,8 +113,8 @@ export default function DiviDashboard() {
     <div className="min-h-screen bg-[#060a13] text-white relative overflow-hidden px-6 py-10">
 
       {/* Reflections Box - Responsive */}
-      <div className="absolute top-6 left-6 z-50 text-cyan-300 text-sm max-w-[90%] sm:max-w-[250px]">
-        <div className="font-semibold mb-1">Total Reflections Sent</div>
+      <div className="z-50 text-cyan-300 text-sm w-full max-w-xs mx-auto md:absolute md:top-6 md:left-6 md:mx-0 mb-6 md:mb-0">
+        <div className="font-semibold mb-1 text-center md:text-left">Total Reflections Sent</div>
         <div className="bg-[#0e1016] border border-cyan-400 px-6 py-4 rounded-xl shadow-[0_0_15px_#00e5ff50] text-center">
           <div className="text-2xl font-bold text-white">${reflectionsUSD}</div>
           <div className="text-sm text-cyan-300 mt-1">({reflectionsDIVI} DIVI)</div>
