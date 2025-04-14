@@ -24,7 +24,7 @@ export default function EcosystemHome() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mb-10">
         {pages.map((page, index) => (
           <div
             key={index}
@@ -34,6 +34,26 @@ export default function EcosystemHome() {
             <h2 className="text-2xl font-bold text-cyan-300">{page.title}</h2>
           </div>
         ))}
+      </div>
+
+      {/* Social Buttons */}
+      <div className="flex flex-col items-center space-y-4">
+        <a
+          href="https://x.com/DiviOfficial"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
+        >
+          Follow us on X
+        </a>
+        <a
+          href="https://t.me/DiviBEP20"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
+        >
+          Join us on Telegram
+        </a>
       </div>
     </div>
   );
