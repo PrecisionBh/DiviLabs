@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers, parseUnits } from "ethers";
 
+const CONTRACT_ADDRESS = "0x27Ce0569B5f865A1C1F6fA36D66cE07ca329ce35";
+const CONTRACT_ABI = [
+  "function lockTokens(address token, uint256 amount, uint256 unlockTime, uint8 lockType, string calldata metadata) external payable"
+];
+
 export default function LiquidityLock() {
   const navigate = useNavigate();
 
@@ -64,22 +69,37 @@ export default function LiquidityLock() {
     }
   };
 
-  const handleLock = () => {
-    if (lpBalance && calculatedAmount && daysToLock) {
-      const lockData = {
-        lpAddress,
-        lpBalance,
-        percentageToLock,
-        calculatedAmount,
-        daysToLock,
-        lockName,
-        websiteLink,
-        socialLink,
-      };
-      localStorage.setItem("diviLockData", JSON.stringify(lockData));
-      navigate("/vault/promo");
-    } else {
+  const handleLock = async () => {
+    if (!lpBalance || !calculatedAmount || !daysToLock || !lpAddress) {
       alert("Please fill in all fields correctly.");
+      return;
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const decimals = 18; // Assuming LP tokens use 18 decimals
+      const amount = parseUnits(calculatedAmount, decimals);
+      const unlockTime = Math.floor(Date.now() / 1000) + parseInt(daysToLock) * 86400;
+      const metadata = JSON.stringify({ lockName, socialLink, websiteLink });
+
+      const tx = await contract.lockTokens(
+        lpAddress,
+        amount,
+        unlockTime,
+        0, // lockType = 0 for LP lock
+        metadata,
+        { value: parseUnits(totalCost, "ether") }
+      );
+
+      await tx.wait();
+      alert("✅ Lock successful!");
+      navigate("/vault/result");
+    } catch (err) {
+      console.error("Lock failed:", err);
+      alert("❌ Lock failed. See console for details.");
     }
   };
 
@@ -162,7 +182,7 @@ export default function LiquidityLock() {
           onClick={handleLock}
           className="w-full py-3 mt-6 rounded-xl font-bold bg-cyan-500 hover:bg-cyan-600 text-black"
         >
-          Proceed to Last Step
+          Lock Liquidity
         </button>
       </div>
     </div>

@@ -24,7 +24,18 @@ import DocsPage from './pages/docs/DocsPage';
 import VaultDocs from './pages/docs/VaultDocs';
 import ContractCreator from './pages/docs/ContractCreator';
 import Auditor from './pages/docs/Auditor';
-import StakingPlatform from './pages/docs/StakingPlatform'; // ✅ NEW
+import StakingPlatform from './pages/docs/StakingPlatform';
+
+// Contract Creator Wizard Pages
+import ContractCreatorLanding from './pages/ContractCreator/ContractCreatorLanding';
+import TokenDetails from './pages/ContractCreator/TokenDetails';
+import Tokenomics from './pages/ContractCreator/Tokenomics';
+import ContractCreatorPricing from './pages/ContractCreator/ContractCreatorPricing';
+import AdvancedOptions from './pages/ContractCreator/AdvancedOptions';
+import FinalReview from './pages/ContractCreator/FinalReview';
+import DeploySuccess from './pages/ContractCreator/DeploySuccess';
+import ManualDeployForm from './pages/ContractCreator/ManualDeployForm';
+import MyContracts from './pages/ContractCreator/MyContracts';
 
 export default function App() {
   return (
@@ -54,7 +65,20 @@ export default function App() {
         <Route path="/docs/vault" element={<VaultDocs />} />
         <Route path="/docs/contract-creator" element={<ContractCreator />} />
         <Route path="/docs/auditor" element={<Auditor />} />
-        <Route path="/docs/staking" element={<StakingPlatform />} /> {/* ✅ NEW */}
+        <Route path="/docs/staking" element={<StakingPlatform />} />
+
+        {/* Contract Creator Wizard */}
+        <Route path="/contract-creator" element={<ContractCreatorLanding />} />
+        <Route path="/contract-creator/token-details" element={<TokenDetails />} />
+        <Route path="/contract-creator/tokenomics" element={<Tokenomics />} />
+        <Route path="/contract-creator/pricing" element={<ContractCreatorPricing />} />
+        <Route path="/contract-creator/advanced-options" element={<AdvancedOptions />} />
+        <Route path="/contract-creator/final-review" element={<FinalReview />} />
+        <Route path="/contract-creator/success" element={<DeploySuccess />} />
+        <Route path="/contract-creator/manual-deploy-form" element={<ManualDeployForm />} />
+
+        {/* Created Contracts */}
+        <Route path="/my-contracts" element={<MyContracts />} />
       </Routes>
     </Router>
   );

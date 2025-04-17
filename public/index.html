@@ -6,11 +6,37 @@
     <title>Divi Labs</title>
   </head>
   <body>
-    <!-- The root div where your React app will be injected -->
+    <!-- The root div where React mounts -->
     <div id="root"></div>
 
-    <!-- Include the generated JavaScript bundle (make sure the file name matches the build output) -->
-    <!-- Adjust the filename if necessary, e.g., it might look like main.xxxxx.js -->
-    <script src="/static/js/main.575d80c7.js"></script>
+    <!-- ✅ Local Solidity Compiler Loader -->
+    <script>
+      window.loadSolc = async function () {
+        return new Promise((resolve, reject) => {
+          if (window.solc && typeof window.solc.setupMethods === "function") {
+            return resolve(window.solc.setupMethods(window.Module));
+          }
+
+          const script = document.createElement("script");
+          script.src = "/soljson-v0.8.29.js"; // ✅ Must be placed in public/
+          script.onload = () => {
+            try {
+              const solc = window.solc.setupMethods(window.Module);
+              console.log("✅ Solidity compiler loaded");
+              resolve(solc);
+            } catch (e) {
+              console.error("❌ solc setupMethods failed", e);
+              reject(e);
+            }
+          };
+          script.onerror = (e) => {
+            console.error("❌ Failed to load solc-js file", e);
+            reject(e);
+          };
+
+          document.head.appendChild(script);
+        });
+      };
+    </script>
   </body>
 </html>

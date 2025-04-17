@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import "../assets/starfield.css";
 
-const DIVI_TOKEN = "0xB5623308Cc34691233B7FfB1940da5f524AB36CB";
-const LP_PAIR = "0xc5fF7bC375C1BD6668E69a2d5d2850d0E9BC3BF7";
+const DIVI_TOKEN = "0xbe79a7BAB5aD6682F9cc8deBBDaa9C7256ECbE55";
+const LP_PAIR = "0xDFE9c6e9C27F68CF7856E8342Dd58c13ce5364Be";
+const BNB_FEE_WALLET = "0x8f9c1147b2c710F92BE65956fDE139351123d27E";
+const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
 const LP_ABI = [
   "function getReserves() view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)",
@@ -13,7 +15,7 @@ const LP_ABI = [
 
 const DIVI_ABI = [
   "function totalReflections() view returns (uint256)",
-  "function totalSupply() view returns (uint256)"
+  "function totalSupply() view returns (uint256)",
 ];
 
 export default function DiviDashboard() {
@@ -27,6 +29,8 @@ export default function DiviDashboard() {
   const [bnbAmount, setBnbAmount] = useState("");
   const [diviAmount, setDiviAmount] = useState("");
   const [isSelling, setIsSelling] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [slippage, setSlippage] = useState(10);
 
   useEffect(() => {
     fetchBNBPrice();
@@ -41,15 +45,15 @@ export default function DiviDashboard() {
     }
 
     const diviPerBnb = parseFloat(price);
-    const bnbInput = parseFloat(bnbAmount);
+    const input = parseFloat(bnbAmount);
 
     if (!isSelling) {
-      const raw = bnbInput * diviPerBnb;
-      const estimated = raw * 0.94;
+      const raw = input * diviPerBnb;
+      const estimated = raw * (1 - 0.06);
       setDiviAmount(estimated.toFixed(2));
     } else {
-      const raw = bnbInput / diviPerBnb;
-      const estimated = raw * 0.94;
+      const raw = input / diviPerBnb;
+      const estimated = raw * (1 - 0.06);
       setDiviAmount(estimated.toFixed(4));
     }
   }, [bnbAmount, price, isSelling]);
@@ -72,7 +76,8 @@ export default function DiviDashboard() {
 
       const [reserve0, reserve1] = await lp.getReserves();
       const token0 = await lp.token0();
-      const bnbIs0 = token0 === "0x0000000000000000000000000000000000000000";
+      const bnbIs0 = token0.toLowerCase() === WBNB.toLowerCase();
+
       const bnbReserve = Number(bnbIs0 ? reserve0 : reserve1) / 1e18;
       const diviReserve = Number(bnbIs0 ? reserve1 : reserve0) / 1e18;
 
@@ -103,6 +108,20 @@ export default function DiviDashboard() {
     }
   };
 
+  const handleBuyClick = () => {
+    if (bnbAmount === "" || isNaN(bnbAmount)) return;
+    setShowConfirm(true);
+  };
+
+  const confirmSwap = async () => {
+    // logic for sending swap here
+    setShowConfirm(false);
+  };
+
+  const cancelSwap = () => {
+    setShowConfirm(false);
+  };
+
   const swapDirection = () => {
     setIsSelling(!isSelling);
     setBnbAmount(diviAmount);
@@ -112,7 +131,7 @@ export default function DiviDashboard() {
   return (
     <div className="min-h-screen bg-[#060a13] text-white relative overflow-hidden px-6 py-10">
 
-      {/* Reflections Box - Responsive */}
+      {/* Reflections Box */}
       <div className="z-50 text-cyan-300 text-sm w-full max-w-xs mx-auto md:absolute md:top-6 md:left-6 md:mx-0 mb-6 md:mb-0">
         <div className="font-semibold mb-1 text-center md:text-left">Total Reflections Sent</div>
         <div className="bg-[#0e1016] border border-cyan-400 px-6 py-4 rounded-xl shadow-[0_0_15px_#00e5ff50] text-center">
@@ -141,8 +160,24 @@ export default function DiviDashboard() {
       <div className="flex justify-center z-10 relative">
         <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-6 shadow-[0_0_40px_#00e5ff90] w-full max-w-[420px] space-y-6">
 
-          {/* Input Box */}
-          <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 shadow-[0_0_25px_#00e5ff60] flex items-center justify-between">
+          {/* Slippage & Settings */}
+          <div className="flex justify-between items-center">
+            <div className="text-cyan-300 font-semibold text-sm">Slippage: {slippage}%</div>
+            <button
+              onClick={() => {
+                const s = prompt("Enter slippage % (e.g., 10 for 10%)", slippage.toString());
+                if (!s) return;
+                const value = parseFloat(s);
+                if (!isNaN(value) && value >= 1 && value <= 50) setSlippage(value);
+              }}
+              className="text-cyan-300 underline text-sm hover:text-white"
+            >
+              Edit
+            </button>
+          </div>
+
+          {/* Input */}
+          <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 flex items-center justify-between">
             <span className="text-white font-semibold text-base">{isSelling ? "DIVI" : "BNB"}</span>
             <input
               type="number"
@@ -166,8 +201,8 @@ export default function DiviDashboard() {
             </button>
           </div>
 
-          {/* Output Box */}
-          <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 shadow-[0_0_25px_#00e5ff60] flex items-center justify-between">
+          {/* Output */}
+          <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 flex items-center justify-between">
             <span className="text-white font-semibold text-base">{isSelling ? "BNB" : "DIVI"}</span>
             <input
               type="text"
@@ -178,13 +213,16 @@ export default function DiviDashboard() {
             />
           </div>
 
-          <button className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-[0_0_15px_#00e5ff90] transition">
+          <button
+            onClick={handleBuyClick}
+            className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-[0_0_15px_#00e5ff90] transition"
+          >
             {isSelling ? "Sell Now" : "Buy Now"}
           </button>
         </div>
       </div>
 
-      {/* Token Info Button */}
+      {/* Token Info Link */}
       <div className="flex justify-center mt-8">
         <a
           href="/token-info"
@@ -193,6 +231,36 @@ export default function DiviDashboard() {
           View Divi Tokenomics
         </a>
       </div>
+
+      {/* Confirm Modal */}
+      {showConfirm && (
+        <div className="fixed top-0 left-0 w-full h-full bg-[#000000cc] z-50 flex items-center justify-center px-4">
+          <div className="bg-[#0e1016] border border-cyan-500 p-6 rounded-2xl w-full max-w-md shadow-[0_0_30px_#00e5ff80]">
+            <h2 className="text-xl font-bold text-cyan-300 mb-4 text-center">Confirm {isSelling ? "Sell" : "Buy"}</h2>
+            <p className="text-sm text-white mb-2">You are about to {isSelling ? "sell" : "buy"} using:</p>
+            <div className="bg-[#1a1f2b] p-3 rounded-lg mb-3 text-cyan-200 text-sm space-y-1">
+              <div>Slippage: {slippage}%</div>
+              <div>BNB {isSelling ? "Received" : "Spent"}: {bnbAmount}</div>
+              <div>DIVI {isSelling ? "Spent" : "Received"}: {diviAmount}</div>
+              <div>BNB Fee (0.5%): {(bnbAmount * 0.005).toFixed(6)} BNB</div>
+            </div>
+            <div className="flex justify-between gap-4 mt-4">
+              <button
+                onClick={cancelSwap}
+                className="w-1/2 py-2 border border-cyan-500 text-cyan-300 rounded-lg hover:bg-cyan-600 hover:text-black transition font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSwap}
+                className="w-1/2 py-2 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-lg shadow transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

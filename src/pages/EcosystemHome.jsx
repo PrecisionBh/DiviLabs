@@ -7,7 +7,7 @@ export default function EcosystemHome() {
   const pages = [
     { title: "Divi Dashboard", path: "/dashboard" },
     { title: "Divi Vault", path: "/vault/start" },
-    { title: "Contract Creator (Coming Soon)", path: "/docs/contract-creator" },
+    { title: "Contract Creator", path: "/contract-creator" },
     { title: "Token Auditor (Coming Soon)", path: "/docs/auditor" },
     { title: "Staking Platform (Coming Soon)", path: "/docs/staking" },
     { title: "Divi Docs", path: "/docs" },

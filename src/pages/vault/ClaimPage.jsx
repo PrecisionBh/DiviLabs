@@ -29,8 +29,8 @@ export default function ClaimPage() {
 
       for (let i = 0; i < totalLocks; i++) {
         const lock = await contract.locks(i);
-        const isCreator = lock.creator.toLowerCase() === walletAddress.toLowerCase();
-        const isUnlocked = Number(lock.unlockTime) <= Date.now() / 1000;
+        const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
+        const isUnlocked = Number(lock.unlockTime || 0) <= Date.now() / 1000;
         const notWithdrawn = !lock.withdrawn;
 
         if (isCreator && isUnlocked && notWithdrawn) {
@@ -55,7 +55,7 @@ export default function ClaimPage() {
       await tx.wait();
 
       alert(`✅ Successfully claimed Lock #${lockId}`);
-      fetchClaimableLocks(); // refresh list
+      fetchClaimableLocks();
     } catch (err) {
       console.error("Claim failed:", err);
       alert("❌ Claim failed");
@@ -89,26 +89,43 @@ export default function ClaimPage() {
 
       {claimableLocks.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-4xl mx-auto">
-          {claimableLocks.map((lock, idx) => (
-            <div
-              key={idx}
-              className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50]"
-            >
-              <p className="font-bold text-cyan-300 mb-1">Lock ID: {lock.lockId}</p>
-              <p className="text-sm text-white">Token: {lock.token}</p>
-              <p className="text-sm text-white">Amount: {ethers.formatUnits(lock.amount, 18)}</p>
-              <p className="text-sm text-white">
-                Unlock Time: {new Date(Number(lock.unlockTime) * 1000).toLocaleString()}
-              </p>
+          {claimableLocks.map((lock, idx) => {
+            const tokenAddress = lock.token || "Unknown";
+            const rawAmount = lock.amount || 0;
+            const unlockTs = Number(lock.unlockTime || 0);
 
-              <button
-                onClick={() => handleClaim(lock.lockId)}
-                className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
+            let formattedAmount = "Unknown";
+            try {
+              if (rawAmount && rawAmount !== "0") {
+                formattedAmount = ethers.formatUnits(rawAmount.toString(), 18);
+              }
+            } catch (err) {
+              console.warn("Failed to format amount:", rawAmount, err);
+            }
+
+            const unlockTime = unlockTs > 0
+              ? new Date(unlockTs * 1000).toLocaleString()
+              : "Unknown";
+
+            return (
+              <div
+                key={idx}
+                className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50]"
               >
-                🔓 Claim Now
-              </button>
-            </div>
-          ))}
+                <p className="font-bold text-cyan-300 mb-1">Lock ID: {lock.lockId}</p>
+                <p className="text-sm text-white break-all">Token Contract: {tokenAddress}</p>
+                <p className="text-sm text-white">Locked Amount: {formattedAmount}</p>
+                <p className="text-sm text-white">Unlock Time: {unlockTime}</p>
+
+                <button
+                  onClick={() => handleClaim(lock.lockId)}
+                  className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
+                >
+                  🔓 Claim Now
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
