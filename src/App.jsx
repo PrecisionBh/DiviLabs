@@ -34,7 +34,6 @@ import Tokenomics from './pages/ContractCreator/Tokenomics';
 import ContractCreatorPricing from './pages/ContractCreator/ContractCreatorPricing';
 import AdvancedOptions from './pages/ContractCreator/AdvancedOptions';
 import FinalReview from './pages/ContractCreator/FinalReview';
-import DeployPage from './pages/ContractCreator/DeployPage'; // ✅ Newly added
 import DeploySuccess from './pages/ContractCreator/DeploySuccess';
 import ManualDeployForm from './pages/ContractCreator/ManualDeployForm';
 import MyContracts from './pages/ContractCreator/MyContracts';
@@ -76,7 +75,6 @@ export default function App() {
         <Route path="/contract-creator/pricing" element={<ContractCreatorPricing />} />
         <Route path="/contract-creator/advanced-options" element={<AdvancedOptions />} />
         <Route path="/contract-creator/final-review" element={<FinalReview />} />
-        <Route path="/contract-creator/deploy" element={<DeployPage />} /> {/* ✅ New Route */}
         <Route path="/contract-creator/success" element={<DeploySuccess />} />
         <Route path="/contract-creator/manual-deploy-form" element={<ManualDeployForm />} />
 

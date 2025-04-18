@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
 export default function ConnectWalletButton() {
-  const [walletAddress, setWalletAddress] = useState(null);
+  const [walletAddress, setWalletAddress] = useState("");
 
   const connectWallet = async () => {
     try {
@@ -13,7 +13,9 @@ export default function ConnectWalletButton() {
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
-      setWalletAddress(accounts[0]);
+      const address = accounts[0];
+      setWalletAddress(address);
+      localStorage.setItem("connected_wallet", address);
     } catch (err) {
       console.error("Wallet connection error:", err);
     }
@@ -21,16 +23,24 @@ export default function ConnectWalletButton() {
 
   useEffect(() => {
     const checkConnection = async () => {
-      if (window.ethereum) {
+      const saved = localStorage.getItem("connected_wallet");
+      if (saved) {
+        setWalletAddress(saved);
+      } else if (window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await provider.listAccounts();
         if (accounts.length > 0) {
-          setWalletAddress(accounts[0].address);
+          setWalletAddress(accounts[0]);
         }
       }
     };
     checkConnection();
   }, []);
+
+  const shortAddress =
+    typeof walletAddress === "string" && walletAddress.length >= 10
+      ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+      : "Connect Wallet";
 
   return (
     <div className="fixed top-6 right-6 z-50">
@@ -38,9 +48,7 @@ export default function ConnectWalletButton() {
         onClick={connectWallet}
         className="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-sm rounded-xl shadow-lg transition animate-pulse-slow"
       >
-        {walletAddress
-          ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-          : "Connect Wallet"}
+        {shortAddress}
       </button>
 
       <style>{`
