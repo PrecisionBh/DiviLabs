@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import "../assets/starfield.css";
+import CountdownBox from "../components/CountdownBox";
 
-const DIVI_TOKEN = "0xbe79a7BAB5aD6682F9cc8deBBDaa9C7256ECbE55";
-const LP_PAIR = "0xDFE9c6e9C27F68CF7856E8342Dd58c13ce5364Be";
+
+const DIVI_TOKEN = "0x32Cf9c7fceb015165456742aDdcaDFFC8c2bd104";
+const LP_PAIR = "0x79FEA4A1FC0B308D99a05b25B5FFA8a35009F294";
+const ROUTER = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 const BNB_FEE_WALLET = "0x8f9c1147b2c710F92BE65956fDE139351123d27E";
 const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
@@ -16,6 +19,7 @@ const LP_ABI = [
 const DIVI_ABI = [
   "function totalReflections() view returns (uint256)",
   "function totalSupply() view returns (uint256)",
+  "function approve(address spender, uint amount) external returns (bool)"
 ];
 
 export default function DiviDashboard() {
@@ -32,11 +36,17 @@ export default function DiviDashboard() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [slippage, setSlippage] = useState(10);
 
+  
   useEffect(() => {
-    fetchBNBPrice();
-    fetchStats();
-    fetchHolderCount();
+    const interval = setInterval(() => {
+      fetchBNBPrice();
+      fetchStats();
+      fetchHolderCount();
+    }, 10000); // ⏱ every 10 seconds
+  
+    return () => clearInterval(interval); // cleanup on unmount
   }, []);
+
 
   useEffect(() => {
     if (!bnbAmount || isNaN(bnbAmount)) {
@@ -73,30 +83,67 @@ export default function DiviDashboard() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const lp = new ethers.Contract(LP_PAIR, LP_ABI, provider);
       const divi = new ethers.Contract(DIVI_TOKEN, DIVI_ABI, provider);
-
+  
+      // Get reserves + token order
       const [reserve0, reserve1] = await lp.getReserves();
       const token0 = await lp.token0();
-      const bnbIs0 = token0.toLowerCase() === WBNB.toLowerCase();
-
-      const bnbReserve = Number(bnbIs0 ? reserve0 : reserve1) / 1e18;
-      const diviReserve = Number(bnbIs0 ? reserve1 : reserve0) / 1e18;
-
-      const diviPerBnb = diviReserve / bnbReserve;
-      setPrice(diviPerBnb.toFixed(6));
+      const token1 = await lp.token1();
+  
+      console.log("Reserves:", reserve0.toString(), reserve1.toString());
+      console.log("token0:", token0);
+      console.log("token1:", token1);
+  
+      let bnbReserveRaw, diviReserveRaw;
+  
+      if (token0.toLowerCase() === WBNB.toLowerCase()) {
+        bnbReserveRaw = reserve0;
+        diviReserveRaw = reserve1;
+      } else if (token1.toLowerCase() === WBNB.toLowerCase()) {
+        bnbReserveRaw = reserve1;
+        diviReserveRaw = reserve0;
+      } else {
+        throw new Error("WBNB not found in LP pair");
+      }
+  
+      const bnbReserve = Number(bnbReserveRaw) / 1e18;
+      const diviReserve = Number(diviReserveRaw) / 1e18;
+  
+      console.log("Parsed BNB Reserve:", bnbReserve);
+      console.log("Parsed DIVI Reserve:", diviReserve);
+  
+      // Get BNB price inline
+      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd");
+      const data = await res.json();
+      const bnbUsd = data?.binancecoin?.usd;
+  
+      if (!bnbUsd) {
+        console.warn("BNB price not available, skipping calculations.");
+        return;
+      }
+  
+      // ✅ Calculate DIVI price in USD
+      const tokensPerBnb = diviReserve / bnbReserve;
+      const diviPriceUsd = bnbUsd / tokensPerBnb;
+  
+      setPrice(diviPriceUsd.toFixed(6)); // ✅ THIS LINE is crucial
+  
+      // ✅ Set other dashboard metrics
       setLiquidity((bnbReserve * bnbUsd * 2).toLocaleString(undefined, { maximumFractionDigits: 0 }));
-
+  
       const totalSupply = await divi.totalSupply();
-      const mc = (Number(totalSupply) / 1e18) * (bnbUsd / diviPerBnb);
+      const mc = (Number(totalSupply) / 1e18) * diviPriceUsd;
       setMarketCap(mc.toLocaleString(undefined, { maximumFractionDigits: 0 }));
-
+  
       const totalReflections = await divi.totalReflections();
       const amount = Number(totalReflections) / 1e18;
       setReflectionsDIVI(amount.toLocaleString(undefined, { maximumFractionDigits: 0 }));
-      setReflectionsUSD((amount * (bnbUsd / diviPerBnb)).toFixed(2));
+      setReflectionsUSD((amount * diviPriceUsd).toFixed(2));
     } catch (err) {
-      console.error(err);
+      console.error("fetchStats failed:", err);
     }
   };
+  
+  
 
   const fetchHolderCount = async () => {
     try {
@@ -114,14 +161,66 @@ export default function DiviDashboard() {
   };
 
   const confirmSwap = async () => {
-    // logic for sending swap here
-    setShowConfirm(false);
+    try {
+      if (!window.ethereum) return alert("Connect wallet first");
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const router = new ethers.Contract(
+        ROUTER,
+        [
+          "function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) payable",
+          "function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)"
+        ],
+        signer
+      );
+
+      const feeAmount = parseFloat(bnbAmount) * 0.005;
+      const netAmount = parseFloat(bnbAmount) - feeAmount;
+
+      if (!isSelling) {
+        const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+          0,
+          [WBNB, DIVI_TOKEN],
+          await signer.getAddress(),
+          Math.floor(Date.now() / 1000) + 60,
+          { value: ethers.parseEther(netAmount.toFixed(6)) }
+        );
+        await tx.wait();
+
+        const feeTx = await signer.sendTransaction({
+          to: BNB_FEE_WALLET,
+          value: ethers.parseEther(feeAmount.toFixed(6))
+        });
+        await feeTx.wait();
+      } else {
+        const token = new ethers.Contract(DIVI_TOKEN, DIVI_ABI, signer);
+        const amountIn = ethers.parseEther(bnbAmount);
+
+        const approvalTx = await token.approve(ROUTER, amountIn);
+        await approvalTx.wait();
+
+        const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+          amountIn,
+          0,
+          [DIVI_TOKEN, WBNB],
+          await signer.getAddress(),
+          Math.floor(Date.now() / 1000) + 60
+        );
+        await tx.wait();
+      }
+
+      setShowConfirm(false);
+      setBnbAmount("");
+      setDiviAmount("");
+    } catch (err) {
+      console.error("Swap failed:", err);
+      alert("Swap failed: " + err.message);
+    }
   };
 
-  const cancelSwap = () => {
-    setShowConfirm(false);
-  };
-
+  const cancelSwap = () => setShowConfirm(false);
   const swapDirection = () => {
     setIsSelling(!isSelling);
     setBnbAmount(diviAmount);
@@ -129,9 +228,9 @@ export default function DiviDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060a13] text-white relative overflow-hidden px-6 py-10">
-
-      {/* Reflections Box */}
+    <div className="min-h-screen bg-[#060a13] text-white px-6 py-10">
+  
+      {/* ✅ Reflections Box */}
       <div className="z-50 text-cyan-300 text-sm w-full max-w-xs mx-auto md:absolute md:top-6 md:left-6 md:mx-0 mb-6 md:mb-0">
         <div className="font-semibold mb-1 text-center md:text-left">Total Reflections Sent</div>
         <div className="bg-[#0e1016] border border-cyan-400 px-6 py-4 rounded-xl shadow-[0_0_15px_#00e5ff50] text-center">
@@ -139,28 +238,27 @@ export default function DiviDashboard() {
           <div className="text-sm text-cyan-300 mt-1">({reflectionsDIVI} DIVI)</div>
         </div>
       </div>
-
-      {/* Title */}
+  
+      {/* ✅ Title */}
       <div className="text-center mb-6">
         <h1 className="text-5xl md:text-6xl font-extrabold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff]">
           Divi Dashboard
         </h1>
         <p className="text-cyan-200 text-md md:text-lg mt-1 tracking-wide">Central Hub of the Divi Token</p>
       </div>
-
-      {/* Metrics */}
+  
+      {/* ✅ Countdown Timer */}
+      <CountdownBox />
+  
       <div className="flex justify-center gap-6 md:gap-10 text-cyan-300 text-sm font-semibold mb-10 flex-wrap text-center">
         <div>Price: ${price}</div>
         <div>LP: ${liquidity}</div>
         <div>Market Cap: ${marketCap}</div>
         <div>Holders: {holderCount}</div>
       </div>
-
-      {/* Swap Box */}
+  
       <div className="flex justify-center z-10 relative">
         <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-6 shadow-[0_0_40px_#00e5ff90] w-full max-w-[420px] space-y-6">
-
-          {/* Slippage & Settings */}
           <div className="flex justify-between items-center">
             <div className="text-cyan-300 font-semibold text-sm">Slippage: {slippage}%</div>
             <button
@@ -175,8 +273,7 @@ export default function DiviDashboard() {
               Edit
             </button>
           </div>
-
-          {/* Input */}
+  
           <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 flex items-center justify-between">
             <span className="text-white font-semibold text-base">{isSelling ? "DIVI" : "BNB"}</span>
             <input
@@ -188,8 +285,7 @@ export default function DiviDashboard() {
               style={{ MozAppearance: "textfield" }}
             />
           </div>
-
-          {/* Swap Arrow */}
+  
           <div className="flex justify-center relative">
             <div className="absolute w-full h-[1px] bg-cyan-800 opacity-30" />
             <button
@@ -200,8 +296,7 @@ export default function DiviDashboard() {
               ⬍
             </button>
           </div>
-
-          {/* Output */}
+  
           <div className="bg-[#121a26] px-5 py-4 rounded-xl border border-cyan-500 flex items-center justify-between">
             <span className="text-white font-semibold text-base">{isSelling ? "BNB" : "DIVI"}</span>
             <input
@@ -212,7 +307,7 @@ export default function DiviDashboard() {
               disabled
             />
           </div>
-
+  
           <button
             onClick={handleBuyClick}
             className="w-full py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-[0_0_15px_#00e5ff90] transition"
@@ -221,8 +316,7 @@ export default function DiviDashboard() {
           </button>
         </div>
       </div>
-
-      {/* Token Info Link */}
+  
       <div className="flex justify-center mt-8">
         <a
           href="/token-info"
@@ -231,8 +325,7 @@ export default function DiviDashboard() {
           View Divi Tokenomics
         </a>
       </div>
-
-      {/* Confirm Modal */}
+  
       {showConfirm && (
         <div className="fixed top-0 left-0 w-full h-full bg-[#000000cc] z-50 flex items-center justify-center px-4">
           <div className="bg-[#0e1016] border border-cyan-500 p-6 rounded-2xl w-full max-w-md shadow-[0_0_30px_#00e5ff80]">

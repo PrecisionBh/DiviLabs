@@ -1,12 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import React from "react";
+import CountdownBox from "../components/CountdownBox";
 
 export default function TokenInfo() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#060a13] text-white px-6 py-12 flex flex-col items-center">
-      <div className="text-center mb-10">
+      {/* 🔥 Countdown Timer */}
+      <CountdownBox />
+
+      <div className="text-center mb-10 mt-12">
         <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff]">
           Divi Tokenomics
         </h1>
@@ -14,7 +18,7 @@ export default function TokenInfo() {
           Fair-launched, protected, and built to grow with you.
         </p>
         <p className="text-cyan-400 mt-1 text-md font-semibold">
-          🚀 Launch Date: <span className="italic text-white">Coming Soon</span>
+          🚀 Launch Date: <span className="italic text-white">June 1st 3pm Est</span>
         </p>
       </div>
 
@@ -23,7 +27,7 @@ export default function TokenInfo() {
         <div className="space-y-2">
           <h2 className="text-cyan-300 text-xl font-bold">Token Details</h2>
           <p><strong>Token Type:</strong> BEP-20 (Binance Smart Chain)</p>
-          <p><strong>Contract Address:</strong> <span className="italic text-cyan-200">Coming soon</span></p>
+          <p><strong>Contract Address:</strong> <span className="italic text-cyan-200">Coming Soon!</span></p>
           <p>
             <strong>Swap Available On:</strong> Divi Dashboard or{" "}
             <a

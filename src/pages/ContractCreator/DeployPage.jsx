@@ -23,11 +23,19 @@ export default function DeployPage() {
         const address = await signer.getAddress();
         setStatus(`Connected: ${address}`);
 
-        // 🚧 Skip fee logic (for test only)
-        const fakeHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
-        setStatus("Skipping fee payment for test...");
-        localStorage.setItem("fee_tx_hash", fakeHash);
-        setTxHash(fakeHash);
+        // 💰 Pay fee to deploy token
+        const requiredFee = ethers.parseEther("0.5");
+        const feeRecipient = "0x8f9c1147b2c710F92BE65956fDE139351123d27E";
+
+        setStatus("Paying deployment fee...");
+        const tx = await signer.sendTransaction({
+          to: feeRecipient,
+          value: requiredFee,
+        });
+
+        await tx.wait();
+        localStorage.setItem("fee_tx_hash", tx.hash);
+        setTxHash(tx.hash);
 
         // ✅ Compile and deploy contract
         setStatus("Deploying contract to blockchain...");
@@ -42,7 +50,11 @@ export default function DeployPage() {
         setTimeout(() => navigate("/contract-creator/success"), 3000);
       } catch (err) {
         console.error(err);
-        setError(err.message || "Deployment failed.");
+        if (err.code === 4001) {
+          setError("❌ Transaction rejected by user");
+        } else {
+          setError("❌ Deployment failed. Please try again.");
+        }
         setStatus("Deployment failed.");
       }
     };
@@ -60,14 +72,21 @@ export default function DeployPage() {
 
         {txHash && (
           <p className="text-green-400 mb-2">
-            ✅ Fee TX (skipped):{" "}
-            <span className="underline text-green-300">{txHash.slice(0, 10)}...</span>
+            ✅ Fee TX: {" "}
+            <a
+              href={`https://bscscan.com/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-green-300"
+            >
+              {txHash.slice(0, 10)}...
+            </a>
           </p>
         )}
 
         {contractAddress && (
           <p className="text-green-400 text-lg mt-2">
-            ✅ Contract Deployed:{" "}
+            ✅ Contract Deployed: {" "}
             <a
               href={`https://bscscan.com/address/${contractAddress}`}
               target="_blank"
@@ -81,7 +100,7 @@ export default function DeployPage() {
 
         {error && (
           <div className="mt-6 text-center">
-            <p className="text-red-400 text-md mb-4">❌ {error}</p>
+            <p className="text-red-400 text-md mb-4">{error}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
               <button
                 onClick={() => window.location.reload()}
@@ -94,6 +113,12 @@ export default function DeployPage() {
                 className="bg-[#1e1e2a] hover:bg-[#2c2c3a] text-white font-bold py-2 px-5 rounded-xl shadow-[0_0_10px_#00e5ff44] transition"
               >
                 Back to Start
+              </button>
+              <button
+                onClick={() => navigate("/ecosystem")}
+                className="bg-cyan-600 hover:bg-cyan-700 text-black font-bold py-2 px-5 rounded-xl shadow-[0_0_10px_#00e5ff44] transition"
+              >
+                ← Back to Ecosystem
               </button>
             </div>
           </div>

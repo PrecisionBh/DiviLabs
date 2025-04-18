@@ -1,4 +1,3 @@
-// src/pages/ContractCreator/DeploySuccess.jsx
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { downloadContractZip } from "../../lib/ZipBuilder";
@@ -57,7 +56,7 @@ export default function DeploySuccess() {
             </p>
             {feeTxHash && (
               <p className="text-green-400 text-md">
-                <strong>Fee TX Hash:</strong><br />
+                <strong>Fee TX:</strong><br />
                 <a
                   href={`https://bscscan.com/tx/${feeTxHash}`}
                   target="_blank"

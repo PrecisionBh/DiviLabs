@@ -1,3 +1,4 @@
+// src/pages/ContractCreator/FinalReview.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { storeContractLocally } from "../../lib/ContractStorage";
@@ -30,7 +31,7 @@ export default function FinalReview() {
       package: packageType,
       timestamp: Date.now(),
       wallet: localStorage.getItem("connected_wallet") || "unknown",
-      code: generateContractCode(), // ✅ store actual generated Solidity code
+      code: generateContractCode(),
     };
 
     storeContractLocally(data);
@@ -40,7 +41,7 @@ export default function FinalReview() {
       if (deployOption === "manual") {
         navigate("/contract-creator/manual-deploy-form");
       } else {
-        navigate("/contract-creator/success");
+        navigate("/contract-creator/deploy"); // ✅ now triggers fee + contract deployment
       }
     }, 1500);
   };
@@ -74,7 +75,9 @@ export default function FinalReview() {
               onChange={() => setDeployOption("download")}
               className="w-5 h-5 text-cyan-500"
             />
-            <span className="text-white">Only want the token file <span className="text-cyan-300">(No Extra Fee)</span></span>
+            <span className="text-white">
+              Only want the token file <span className="text-cyan-300">(No Extra Fee)</span>
+            </span>
           </label>
 
           <label className="flex items-center space-x-2">
@@ -86,14 +89,13 @@ export default function FinalReview() {
               className="w-5 h-5 text-cyan-500"
             />
             <span className="text-white">
-              I want Divi Labs to deploy and transfer ownership for <strong className="text-green-400">+1 BNB</strong>
+              I want Divi Labs to deploy and transfer ownership for{" "}
+              <strong className="text-green-400">+1 BNB</strong>
             </span>
           </label>
         </div>
 
-        <p className="mt-4 mb-4 text-cyan-300 text-lg font-semibold">
-          Total: {totalCost} BNB
-        </p>
+        <p className="mt-4 mb-4 text-cyan-300 text-lg font-semibold">Total: {totalCost} BNB</p>
 
         <label className="flex items-center mt-6 space-x-3 text-red-400 text-sm">
           <input
@@ -102,7 +104,10 @@ export default function FinalReview() {
             onChange={() => setAcknowledged(!acknowledged)}
             className="w-4 h-4"
           />
-          <span>I understand that once payment is made, my token code will be generated and cannot be changed.</span>
+          <span>
+            I understand that once payment is made, my token code will be generated and cannot be
+            changed.
+          </span>
         </label>
 
         <div className="mt-8 flex justify-between">

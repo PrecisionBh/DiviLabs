@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import CountdownBox from "../components/CountdownBox";
 
 export default function LandingPage() {
   console.log("LandingPage rendered");
@@ -21,6 +22,9 @@ export default function LandingPage() {
           <Link to="/ecosystem">Enter Ecosystem</Link>
         </motion.div>
       </div>
+
+      {/* 🔥 Countdown timer placed below button */}
+      <CountdownBox />
     </div>
   );
 }

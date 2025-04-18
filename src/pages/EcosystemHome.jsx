@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import CountdownBox from "../components/CountdownBox";
 
 export default function EcosystemHome() {
   const navigate = useNavigate();
@@ -24,7 +25,10 @@ export default function EcosystemHome() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mb-10">
+      {/* 🔥 Countdown Box added here */}
+      <CountdownBox />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-12 mb-10">
         {pages.map((page, index) => (
           <div
             key={index}
