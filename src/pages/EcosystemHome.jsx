@@ -9,7 +9,7 @@ export default function EcosystemHome() {
     { title: "Divi Dashboard", path: "/dashboard" },
     { title: "Divi Vault", path: "/vault/start" },
     { title: "Contract Creator", path: "/contract-creator" },
-    { title: "Token Auditor (Coming Soon)", path: "/docs/auditor" },
+    { title: "Token Auditor", path: "/auditor" },
     { title: "Staking Platform (Coming Soon)", path: "/docs/staking" },
     { title: "Divi Docs", path: "/docs" },
   ];

@@ -38,6 +38,13 @@ import DeploySuccess from './pages/ContractCreator/DeploySuccess';
 import ManualDeployForm from './pages/ContractCreator/ManualDeployForm';
 import MyContracts from './pages/ContractCreator/MyContracts';
 
+// Auditor Pages
+import AuditorLanding from './pages/auditor/AuditorLanding';
+import PreLaunchAudit from './pages/auditor/PreLaunchAudit';
+import VerifiedAuditForm from './pages/auditor/VerifiedAuditForm';
+import VerifiedAuditResults from './pages/auditor/VerifiedAuditResults';
+import PublicAuditResults from './pages/auditor/PublicAuditResults';
+
 export default function App() {
   return (
     <Router>
@@ -49,7 +56,7 @@ export default function App() {
         <Route path="/dashboard" element={<DiviDashboard />} />
         <Route path="/token-info" element={<TokenInfo />} />
 
-        {/* Vault Flow */}
+        {/* Vault */}
         <Route path="/vault" element={<Navigate to="/vault/start" />} />
         <Route path="/vault/start" element={<VaultLanding />} />
         <Route path="/vault/chain" element={<ChainSelect />} />
@@ -61,7 +68,7 @@ export default function App() {
         <Route path="/vault/result" element={<VaultResultPage />} />
         <Route path="/vault/claim" element={<ClaimPage />} />
 
-        {/* Docs Section */}
+        {/* Docs */}
         <Route path="/docs" element={<DocsPage />} />
         <Route path="/docs/vault" element={<VaultDocs />} />
         <Route path="/docs/contract-creator" element={<ContractCreator />} />
@@ -77,9 +84,14 @@ export default function App() {
         <Route path="/contract-creator/final-review" element={<FinalReview />} />
         <Route path="/contract-creator/success" element={<DeploySuccess />} />
         <Route path="/contract-creator/manual-deploy-form" element={<ManualDeployForm />} />
-
-        {/* Created Contracts */}
         <Route path="/my-contracts" element={<MyContracts />} />
+
+        {/* Auditor */}
+        <Route path="/auditor/verified-results" element={<VerifiedAuditResults />} />
+        <Route path="/auditor/verified" element={<VerifiedAuditForm />} />
+        <Route path="/auditor/prelaunchaudit" element={<PreLaunchAudit />} />
+        <Route path="/auditor/results" element={<PublicAuditResults />} />
+        <Route path="/auditor" element={<AuditorLanding />} />
       </Routes>
     </Router>
   );

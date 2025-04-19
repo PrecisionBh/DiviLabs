@@ -1,158 +1,138 @@
-""// src/pages/ContractCreator/FinalReview.jsx
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { storeContractLocally } from "../../lib/ContractStorage";
-import { generateContractCode } from "../../lib/ContractBuilder";
+// src/pages/ContractCreator/DeployPage.jsx
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
+import { useNavigate } from "react-router-dom";
+import { deployGeneratedContract } from "../../lib/Deployer";
+import { generateContractCode } from "../../lib/ContractBuilder";
+import { storeContractLocally } from "../../lib/ContractStorage";
 
-export default function FinalReview() {
+export default function DeployPage() {
   const navigate = useNavigate();
-  const [acknowledged, setAcknowledged] = useState(false);
-  const [deployOption, setDeployOption] = useState("download");
-  const [showPopup, setShowPopup] = useState(false);
+  const [status, setStatus] = useState("Connecting to MetaMask...");
+  const [txHash, setTxHash] = useState(null);
+  const [contractAddress, setContractAddress] = useState(null);
+  const [error, setError] = useState("");
 
-  const handleContinue = async () => {
-    if (!acknowledged) {
-      alert("❌ You must acknowledge the terms before continuing.");
-      return;
-    }
+  useEffect(() => {
+    const deployToken = async () => {
+      try {
+        if (!window.ethereum) throw new Error("MetaMask not detected");
 
-    const tokenInfo = JSON.parse(localStorage.getItem("divi_token_info")) || {};
-    const tokenomics = JSON.parse(localStorage.getItem("divi_tokenomics")) || {};
-    const advancedOptions = JSON.parse(localStorage.getItem("divi_advanced_options")) || {};
-    const packageType = localStorage.getItem("divi_token_package") || "basic";
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        setStatus(`Connected: ${address}`);
 
-    const id = Date.now().toString();
-    const data = {
-      id,
-      tokenInfo,
-      tokenomics,
-      advancedOptions,
-      package: packageType,
-      timestamp: Date.now(),
-      wallet: localStorage.getItem("connected_wallet") || "unknown",
-      code: generateContractCode(),
+        // Get local storage info
+        const packageType = localStorage.getItem("divi_token_package") || "basic";
+        const baseCost = packageType.toLowerCase() === "advanced" ? 0.2 : 0.1;
+
+        setStatus(`Awaiting ${baseCost} BNB payment...`);
+
+        // Trigger wallet payment
+        const tx = await signer.sendTransaction({
+          to: "0x8f9c1147b2c710F92BE65956fDE139351123d27E",
+          value: ethers.parseEther(baseCost.toString()),
+        });
+
+        await tx.wait();
+        setTxHash(tx.hash);
+        localStorage.setItem("fee_tx_hash", tx.hash);
+
+        // Generate & deploy contract
+        setStatus("Deploying contract to blockchain...");
+        const { contractAddress } = await deployGeneratedContract(signer);
+        setContractAddress(contractAddress);
+
+        // Save to local storage
+        const tokenInfo = JSON.parse(localStorage.getItem("divi_token_info")) || {};
+        const tokenomics = JSON.parse(localStorage.getItem("divi_tokenomics")) || {};
+        const advancedOptions = JSON.parse(localStorage.getItem("divi_advanced_options")) || {};
+
+        const id = Date.now().toString();
+        storeContractLocally({
+          id,
+          tokenInfo,
+          tokenomics,
+          advancedOptions,
+          package: packageType,
+          timestamp: Date.now(),
+          wallet: address,
+          code: generateContractCode(),
+        });
+
+        localStorage.setItem("last_contract_id", id);
+        localStorage.setItem("deployed_contract_address", contractAddress);
+        setStatus("✅ Contract successfully deployed!");
+
+        setTimeout(() => navigate("/contract-creator/success"), 2500);
+      } catch (err) {
+        console.error("Deploy error:", err);
+        setError("❌ Transaction rejected or failed.");
+        setStatus("Deployment cancelled.");
+      }
     };
 
-    try {
-      if (!window.ethereum) throw new Error("MetaMask not detected.");
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      let cost = packageType.toLowerCase() === "advanced" ? 0.2 : 0.1;
-      if (deployOption === "manual") cost += 0.5;
-
-      const tx = await signer.sendTransaction({
-        to: "0x8f9c1147b2c710F92BE65956fDE139351123d27E",
-        value: ethers.parseEther(cost.toString()),
-      });
-
-      await tx.wait();
-      localStorage.setItem("fee_tx_hash", tx.hash);
-      storeContractLocally(data);
-      setShowPopup(true);
-
-      setTimeout(() => {
-        if (deployOption === "manual") {
-          navigate("/contract-creator/manual-deploy-form");
-        } else {
-          navigate("/contract-creator/success");
-        }
-      }, 1500);
-    } catch (err) {
-      alert("❌ Transaction rejected or failed.");
-      console.error("Payment error:", err);
-      setShowPopup(false);
-    }
-  };
-
-  const packageType = localStorage.getItem("divi_token_package") || "Basic";
-  const baseCost = packageType.toLowerCase() === "advanced" ? 0.2 : 0.1;
-  const totalCost = deployOption === "manual" ? baseCost + 0.5 : baseCost;
+    deployToken();
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-[#060a13] text-white flex flex-col items-center justify-center px-6 py-16">
-      <div className="text-center mb-6">
-        <h2 className="text-4xl font-bold text-cyan-400 drop-shadow-[0_0_20px_#00e5ff] mb-4">
-          Review & Confirm
+    <div className="min-h-screen bg-[#060a13] text-white flex flex-col items-center justify-center px-6 py-12">
+      <div className="text-center max-w-xl">
+        <h2 className="text-3xl font-bold text-cyan-400 drop-shadow-[0_0_20px_#00e5ff] mb-4">
+          Deploying Your Token
         </h2>
+
+        <p className="text-cyan-200 mb-6">{status}</p>
+
+        {txHash && (
+          <p className="text-green-400 mb-2">
+            ✅ Fee TX:{" "}
+            <a
+              href={`https://bscscan.com/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-green-300"
+            >
+              {txHash.slice(0, 10)}...
+            </a>
+          </p>
+        )}
+
+        {contractAddress && (
+          <p className="text-green-400 text-lg mt-2">
+            ✅ Contract Deployed:{" "}
+            <a
+              href={`https://bscscan.com/address/${contractAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-green-300"
+            >
+              {contractAddress}
+            </a>
+          </p>
+        )}
+
+        {error && (
+          <div className="mt-6 text-red-400 text-md">
+            {error}
+            <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 px-5 rounded-xl shadow"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => navigate("/ecosystem")}
+                className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-5 rounded-xl shadow"
+              >
+                ← Back to Ecosystem
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-      <div className="w-full max-w-2xl bg-[#0e1016] border border-cyan-500 p-6 rounded-2xl shadow-[0_0_20px_#00e5ff40]">
-        <p className="mb-2 text-cyan-200 text-md">
-          <strong>Package:</strong> {packageType}
-        </p>
-        <p className="mb-6 text-cyan-200 text-md">
-          <strong>Base Cost:</strong> {baseCost} BNB
-        </p>
-
-        <div className="mb-6 space-y-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="radio"
-              value="download"
-              checked={deployOption === "download"}
-              onChange={() => setDeployOption("download")}
-              className="w-5 h-5 text-cyan-500"
-            />
-            <span className="text-white">
-              Only want the token file <span className="text-cyan-300">(No Extra Fee)</span>
-            </span>
-          </label>
-
-          <label className="flex items-center space-x-2">
-            <input
-              type="radio"
-              value="manual"
-              checked={deployOption === "manual"}
-              onChange={() => setDeployOption("manual")}
-              className="w-5 h-5 text-cyan-500"
-            />
-            <span className="text-white">
-              I want Divi Labs to deploy and transfer ownership for <strong className="text-green-400">+0.5 BNB</strong>
-            </span>
-          </label>
-        </div>
-
-        <p className="mt-4 mb-4 text-cyan-300 text-lg font-semibold">
-          Total: {totalCost} BNB
-        </p>
-
-        <label className="flex items-center mt-6 space-x-3 text-red-400 text-sm">
-          <input
-            type="checkbox"
-            checked={acknowledged}
-            onChange={() => setAcknowledged(!acknowledged)}
-            className="w-4 h-4"
-          />
-          <span>
-            I understand that once payment is made, my token code will be generated and cannot be changed.
-          </span>
-        </label>
-
-        <div className="mt-8 flex justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-xl transition"
-          >
-            Back
-          </button>
-
-          <button
-            onClick={handleContinue}
-            className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 px-6 rounded-xl shadow-[0_0_15px_#00e5ff] transition"
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-
-      {showPopup && (
-        <div className="fixed top-6 bg-green-600 text-black px-6 py-3 rounded-xl shadow-lg font-semibold text-md transition">
-          ✅ Contract saved locally
-        </div>
-      )}
     </div>
   );
 }

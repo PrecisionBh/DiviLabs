@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { ethers } from "ethers";
 
 export default function ContractCreatorLanding() {
@@ -41,6 +40,13 @@ export default function ContractCreatorLanding() {
         className="mt-4 px-6 py-2 border border-cyan-400 text-cyan-300 hover:bg-cyan-600 hover:text-black rounded-xl text-sm"
       >
         View My Contracts
+      </button>
+
+      <button
+        onClick={() => navigate("/ecosystem")}
+        className="mt-6 px-6 py-2 text-cyan-300 underline text-sm hover:text-cyan-100"
+      >
+        ← Back to Ecosystem
       </button>
     </div>
   );
