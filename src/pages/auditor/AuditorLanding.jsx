@@ -16,7 +16,7 @@ export default function AuditorLanding() {
       {/* Buttons */}
       <div className="flex flex-col sm:flex-row gap-6 mb-10 z-10">
         <button
-          onClick={() => navigate("/auditor/prelaunch")}
+          onClick={() => navigate("/auditor/prelaunchaudit")}
           className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 px-6 rounded-xl shadow-[0_0_20px_#00e5ff] transition w-64"
         >
           Pre Launch Audit (Free)
