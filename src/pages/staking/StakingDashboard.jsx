@@ -83,22 +83,32 @@ export default function StakingDashboard() {
     setFilteredPools(results);
   };
 
-  const PoolCard = ({ pool }) => (
-    <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl px-6 py-5 shadow-[0_0_25px_#00e5ff40] max-w-sm w-full">
-      <h3 className="text-xl font-extrabold text-cyan-300 uppercase mb-2">{pool.stakeName}</h3>
-      <p className="text-sm text-cyan-100"><strong>Stake CA:</strong> {pool.stakeTokenAddress}</p>
-      <p className="text-sm text-cyan-100"><strong>Reward Token:</strong> {pool.rewardName}</p>
-      <p className="text-sm text-cyan-100"><strong>Rewards Available:</strong> {parseFloat(pool.rewardsAvailable).toFixed(2)}</p>
-      <p className="text-sm text-cyan-100"><strong>APY:</strong> 5% – 18%</p>
-      <p className="text-sm text-cyan-100"><strong>Total Staked:</strong> {parseFloat(pool.totalStaked).toFixed(2)}</p>
-      <button
-        className="mt-4 w-full bg-[#0e1016] text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500 hover:bg-cyan-500 hover:text-black transition shadow-[0_0_20px_#00e5ff]"
-        onClick={() => navigate(`/staking/pool/${pool.poolAddress}`)}
-      >
-        Stake
-      </button>
-    </div>
-  );
+  const PoolCard = ({ pool }) => {
+    const isMobile = window.innerWidth < 768;
+
+    const truncateAddress = (addr) =>
+      isMobile ? addr.slice(0, 6) + "..." + addr.slice(-4) : addr;
+
+    return (
+      <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl px-6 py-5 shadow-[0_0_25px_#00e5ff40] max-w-sm w-full">
+        <h3 className="text-xl font-extrabold text-cyan-300 uppercase mb-2">{pool.stakeName}</h3>
+        <p className="text-sm text-cyan-100 break-all md:break-normal">
+          <strong>Stake CA:</strong>{" "}
+          <span title={pool.stakeTokenAddress}>{truncateAddress(pool.stakeTokenAddress)}</span>
+        </p>
+        <p className="text-sm text-cyan-100"><strong>Reward Token:</strong> {pool.rewardName}</p>
+        <p className="text-sm text-cyan-100"><strong>Rewards Available:</strong> {parseFloat(pool.rewardsAvailable).toFixed(2)}</p>
+        <p className="text-sm text-cyan-100"><strong>APY:</strong> 5% – 18%</p>
+        <p className="text-sm text-cyan-100"><strong>Total Staked:</strong> {parseFloat(pool.totalStaked).toFixed(2)}</p>
+        <button
+          className="mt-4 w-full bg-[#0e1016] text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500 hover:bg-cyan-500 hover:text-black transition shadow-[0_0_20px_#00e5ff]"
+          onClick={() => navigate(`/staking/pool/${pool.poolAddress}`)}
+        >
+          Stake
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#060a13] text-white px-6 py-12">
