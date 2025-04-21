@@ -10,7 +10,7 @@ export default function EcosystemHome() {
     { title: "Divi Vault", path: "/vault/start" },
     { title: "Contract Creator", path: "/contract-creator" },
     { title: "Token Auditor", path: "/auditor" },
-    { title: "Staking Platform (Coming Soon)", path: "/docs/staking" },
+    { title: "Staking Platform", path: "/staking/start" },
     { title: "Divi Docs", path: "/docs" },
   ];
 
@@ -25,7 +25,7 @@ export default function EcosystemHome() {
         </p>
       </div>
 
-      {/* 🔥 Countdown Box added here */}
+      {/* 🔥 Countdown Box */}
       <CountdownBox />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-12 mb-10">

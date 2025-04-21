@@ -45,6 +45,15 @@ import VerifiedAuditForm from './pages/auditor/VerifiedAuditForm';
 import VerifiedAuditResults from './pages/auditor/VerifiedAuditResults';
 import PublicAuditResults from './pages/auditor/PublicAuditResults';
 
+// Staking Pages
+import StakingLanding from './pages/staking/StakingLanding';
+import StakingDashboard from './pages/staking/StakingDashboard';
+import OnboardProject from './pages/staking/OnboardProject';
+import UserDashboard from './pages/staking/UserDashboard';
+import StakePage from './pages/staking/StakePage';
+import StakeSuccess from './pages/staking/StakeSuccess';
+import DevDashboard from './pages/staking/DevDashboard'; // ✅ NEW
+
 export default function App() {
   return (
     <Router>
@@ -75,7 +84,7 @@ export default function App() {
         <Route path="/docs/auditor" element={<Auditor />} />
         <Route path="/docs/staking" element={<StakingPlatform />} />
 
-        {/* Contract Creator Wizard */}
+        {/* Contract Creator */}
         <Route path="/contract-creator" element={<ContractCreatorLanding />} />
         <Route path="/contract-creator/token-details" element={<TokenDetails />} />
         <Route path="/contract-creator/tokenomics" element={<Tokenomics />} />
@@ -92,6 +101,16 @@ export default function App() {
         <Route path="/auditor/prelaunchaudit" element={<PreLaunchAudit />} />
         <Route path="/auditor/results" element={<PublicAuditResults />} />
         <Route path="/auditor" element={<AuditorLanding />} />
+
+        {/* Staking */}
+        <Route path="/staking" element={<Navigate to="/staking/start" />} />
+        <Route path="/staking/start" element={<StakingLanding />} />
+        <Route path="/staking/pools" element={<StakingDashboard />} />
+        <Route path="/staking/onboard" element={<OnboardProject />} />
+        <Route path="/staking/user" element={<UserDashboard />} />
+        <Route path="/staking/pool/:address" element={<StakePage />} />
+        <Route path="/staking/success" element={<StakeSuccess />} />
+        <Route path="/staking/dev" element={<DevDashboard />} /> {/* ✅ NEW */}
       </Routes>
     </Router>
   );
