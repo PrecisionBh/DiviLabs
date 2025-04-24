@@ -29,17 +29,10 @@ export default function ClaimPage() {
       for (let i = 0; i < totalLocks; i++) {
         const lock = await contract.locks(i);
 
-        console.log(`🔎 Lock ID ${i}:`, {
-          token: lock.token,
-          amount: lock.amount?.toString(),
-          unlockTime: lock.unlockTime?.toString(),
-          creator: lock.creator,
-          withdrawn: lock.withdrawn
-        });
-
         const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
+        const notWithdrawn = !lock.withdrawn;
 
-        if (isCreator) {
+        if (isCreator && notWithdrawn) {
           let symbol = "Unknown";
           let decimals = 18;
           let formattedAmount = "Unknown";
@@ -53,10 +46,7 @@ export default function ClaimPage() {
 
             symbol = await tokenContract.symbol();
             decimals = await tokenContract.decimals();
-
-            if (lock.amount) {
-              formattedAmount = ethers.formatUnits(lock.amount.toString(), decimals);
-            }
+            formattedAmount = ethers.formatUnits(lock.amount.toString(), decimals);
 
             if (lock.unlockTime && Number(lock.unlockTime) > 0) {
               unlockTimeFormatted = new Date(Number(lock.unlockTime) * 1000).toLocaleString();
@@ -69,10 +59,8 @@ export default function ClaimPage() {
             lockId: i,
             symbol,
             amount: formattedAmount,
-            unlockTime: unlockTimeFormatted,
-            rawUnlockTime: Number(lock.unlockTime),
-            withdrawn: lock.withdrawn,
-            isUnlocked: Number(lock.unlockTime) <= Date.now() / 1000
+            unlockTime: lock.unlockTime,
+            unlockTimeFormatted
           });
         }
       }
@@ -104,7 +92,7 @@ export default function ClaimPage() {
   return (
     <div className="min-h-screen bg-[#070B17] text-white px-6 py-12">
       <h1 className="text-center text-4xl font-bold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff] mb-8">
-        Developer Lock Debug View
+        Claim or View Your Locked Tokens
       </h1>
 
       {!walletAddress && (
@@ -119,38 +107,41 @@ export default function ClaimPage() {
       )}
 
       {loading && (
-        <p className="text-center text-cyan-300 animate-pulse mt-6">Loading all user locks...</p>
+        <p className="text-center text-cyan-300 animate-pulse mt-6">Loading your locks...</p>
       )}
 
       {walletAddress && !loading && locks.length === 0 && (
-        <p className="text-center text-cyan-500 mt-6">No locks found for this wallet.</p>
+        <p className="text-center text-cyan-500 mt-6">No active locks found.</p>
       )}
 
       {locks.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-5xl mx-auto">
-          {locks.map((lock, idx) => (
-            <div
-              key={idx}
-              className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
-            >
-              <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
-              <p className="text-sm">Token Symbol: {lock.symbol}</p>
-              <p className="text-sm">Locked Amount: {lock.amount}</p>
-              <p className="text-sm">Unlock Time: {lock.unlockTime}</p>
-              <p className={`text-sm ${lock.withdrawn ? "text-red-400" : "text-green-400"}`}>
-                Status: {lock.withdrawn ? "Withdrawn" : lock.isUnlocked ? "Unlocked & Claimable" : "Still Locked"}
-              </p>
+          {locks.map((lock, idx) => {
+            const isUnlocked = Number(lock.unlockTime) <= Date.now() / 1000;
 
-              {!lock.withdrawn && lock.isUnlocked && (
-                <button
-                  onClick={() => handleClaim(lock.lockId)}
-                  className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
-                >
-                  🔓 Claim Now
-                </button>
-              )}
-            </div>
-          ))}
+            return (
+              <div
+                key={idx}
+                className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
+              >
+                <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
+                <p className="text-sm">Token Symbol: {lock.symbol}</p>
+                <p className="text-sm">Locked Amount: {lock.amount}</p>
+                <p className="text-sm">
+                  {isUnlocked ? "✅ Unlock Available" : `🔒 Unlocks At: ${lock.unlockTimeFormatted}`}
+                </p>
+
+                {isUnlocked && (
+                  <button
+                    onClick={() => handleClaim(lock.lockId)}
+                    className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
+                  >
+                    🔓 Claim Now
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
