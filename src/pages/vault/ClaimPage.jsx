@@ -32,37 +32,37 @@ export default function ClaimPage() {
         const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
         const notWithdrawn = !lock.withdrawn;
 
-        if (isCreator && notWithdrawn) {
-          let symbol = "Unknown";
-          let decimals = 18;
-          let formattedAmount = "Unknown";
-          let unlockTimeFormatted = "Unknown";
+        if (!isCreator || !notWithdrawn) continue; // 🚀 Skip claimed or unrelated locks
 
-          try {
-            const tokenContract = new ethers.Contract(lock.token, [
-              "function symbol() view returns (string)",
-              "function decimals() view returns (uint8)"
-            ], provider);
+        let symbol = "Unknown";
+        let decimals = 18;
+        let formattedAmount = "Unknown";
+        let unlockTimeFormatted = "Unknown";
 
-            symbol = await tokenContract.symbol();
-            decimals = await tokenContract.decimals();
-            formattedAmount = ethers.formatUnits(lock.amount.toString(), decimals);
+        try {
+          const tokenContract = new ethers.Contract(lock.token, [
+            "function symbol() view returns (string)",
+            "function decimals() view returns (uint8)"
+          ], provider);
 
-            if (lock.unlockTime && Number(lock.unlockTime) > 0) {
-              unlockTimeFormatted = new Date(Number(lock.unlockTime) * 1000).toLocaleString();
-            }
-          } catch (err) {
-            console.warn("Token metadata fetch failed for:", lock.token, err);
+          symbol = await tokenContract.symbol();
+          decimals = await tokenContract.decimals();
+          formattedAmount = ethers.formatUnits(lock.amount.toString(), decimals);
+
+          if (lock.unlockTime && Number(lock.unlockTime) > 0) {
+            unlockTimeFormatted = new Date(Number(lock.unlockTime) * 1000).toLocaleString();
           }
-
-          userLocks.push({
-            lockId: i,
-            symbol,
-            amount: formattedAmount,
-            unlockTime: lock.unlockTime,
-            unlockTimeFormatted
-          });
+        } catch (err) {
+          console.warn("Token metadata fetch failed for:", lock.token, err);
         }
+
+        userLocks.push({
+          lockId: i,
+          symbol,
+          amount: formattedAmount,
+          unlockTime: lock.unlockTime,
+          unlockTimeFormatted
+        });
       }
 
       setLocks(userLocks);
@@ -82,10 +82,17 @@ export default function ClaimPage() {
       await tx.wait();
 
       alert(`✅ Lock #${lockId} claimed successfully.`);
-      fetchLocks();
+
+      // 🚀 Instantly remove the claimed lock from UI
+      setLocks((prevLocks) => prevLocks.filter((lock) => lock.lockId !== lockId));
     } catch (err) {
-      console.error("Claim failed:", err);
-      alert("❌ Claim failed. See console for details.");
+      if (err?.reason === "Already withdrawn") {
+        alert("❗ This lock was already claimed.");
+        setLocks((prevLocks) => prevLocks.filter((lock) => lock.lockId !== lockId));
+      } else {
+        console.error("Claim failed:", err);
+        alert("❌ Claim failed. See console for details.");
+      }
     }
   };
 
