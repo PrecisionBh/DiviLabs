@@ -62,9 +62,10 @@ export default function FinalReview() {
         if (deployOption === "manual") {
           navigate("/contract-creator/manual-deploy-form");
         } else {
-          navigate("/contract-creator/deploy");
+          navigate("/contract-creator/success"); // 🔥 fix this line
         }
       }, 1500);
+      
     } catch (err) {
       console.error("Payment error:", err);
       setError("❌ Payment rejected or failed. Please try again.");
