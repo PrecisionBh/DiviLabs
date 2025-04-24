@@ -7,7 +7,9 @@ export default function VaultResultPage() {
 
   const [lockData, setLockData] = useState(null);
 
-  const isSuccess = new URLSearchParams(location.search).get("status") === "success";
+  const query = new URLSearchParams(location.search);
+  const isSuccess = query.get("status") === "success";
+  const txHash = query.get("tx");
 
   useEffect(() => {
     const storedData = localStorage.getItem("diviLockData");
@@ -41,17 +43,38 @@ export default function VaultResultPage() {
               {lockData.lockName && <p><strong>🧪 Lock Name:</strong> {lockData.lockName}</p>}
               {lockData.websiteLink && <p><strong>🌐 Website:</strong> {lockData.websiteLink}</p>}
               {lockData.socialLink && <p><strong>📣 Social:</strong> {lockData.socialLink}</p>}
+              {txHash && (
+                <p>
+                  <strong>🧾 Transaction:</strong><br />
+                  <a
+                    href={`https://bscscan.com/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-cyan-400"
+                  >
+                    {txHash}
+                  </a>
+                </p>
+              )}
               <p className="text-yellow-400 text-sm mt-4">⚠️ If you minted an NFT, it will appear in your wallet shortly.</p>
               <p className="text-orange-300 text-sm">Once your lock expires, visit the Vault landing page and click <strong>Claim Tokens</strong>.</p>
             </div>
           )}
 
-          <button
-            onClick={() => navigate("/ecosystem")}
-            className="mt-6 bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 px-6 rounded-xl shadow-lg transition"
-          >
-            Back to Ecosystem
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <button
+              onClick={() => navigate("/ecosystem")}
+              className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-xl shadow transition"
+            >
+              Back to Ecosystem
+            </button>
+            <button
+              onClick={() => navigate("/vault/claim")}
+              className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 px-6 rounded-xl shadow transition"
+            >
+              🔎 See Your Lock
+            </button>
+          </div>
         </>
       ) : (
         <>

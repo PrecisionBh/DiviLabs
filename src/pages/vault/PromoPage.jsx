@@ -40,11 +40,9 @@ const LP_ABI = [
 ];
 
 export default function PromoPage() {
-  const [withNFT, setWithNFT] = useState(false);
   const [lockData, setLockData] = useState(null);
   const navigate = useNavigate();
-
-  const totalCost = withNFT ? 1.0 : 0.25;
+  const totalCost = 0.25;
 
   useEffect(() => {
     const stored = localStorage.getItem("diviLockData");
@@ -106,26 +104,9 @@ export default function PromoPage() {
       const name = lockData.lockName || "Divi Lock";
       const websiteLink = lockData.websiteLink || "https://divilabs.ai";
       const socialLink = lockData.socialLink || "https://x.com/DiviOfficial";
-      const imageUrl = withNFT
-        ? "https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm"
-        : "";
+      const imageUrl = ""; // no NFT
 
       const emptyVestingStruct = [];
-
-      console.log("Submitting lockTokens with:", {
-        token: lockData.lpAddress,
-        amount: amountInWei.toString(),
-        unlockTimestamp,
-        name,
-        unlockers: [userAddress],
-        lockType: 0,
-        mintNFT: withNFT,
-        imageUrl,
-        projectUrl: websiteLink,
-        socialLink,
-        vesting: emptyVestingStruct,
-        value: fee.toString()
-      });
 
       const tx = await contract.lockTokens(
         lockData.lpAddress,
@@ -134,7 +115,7 @@ export default function PromoPage() {
         name,
         [userAddress],
         0,
-        withNFT,
+        false, // mintNFT is false
         imageUrl,
         websiteLink,
         socialLink,
@@ -143,7 +124,7 @@ export default function PromoPage() {
       );
 
       await tx.wait();
-      navigate("/vault/result?status=success");
+      navigate(`/vault/result?status=success&tx=${tx.hash}`);
     } catch (err) {
       console.error("Transaction failed:", err);
       navigate("/vault/result?status=fail");
@@ -152,25 +133,14 @@ export default function PromoPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-[#0c0f1a] text-white px-4 py-12 flex flex-col items-center space-y-12">
-      <h1 className="text-4xl font-extrabold text-cyan-400 drop-shadow-lg">Promote Your Lock</h1>
+      <h1 className="text-4xl font-extrabold text-cyan-400 drop-shadow-lg">Finalize Your Lock</h1>
       <p className="text-lg text-center text-gray-300 max-w-xl">
-        Mint a glowing NFT card to showcase your lock across the Divi ecosystem. Your lock will
-        appear publicly with a visual badge of authenticity.
+        Your lock is ready. Confirm to lock your LP tokens securely on-chain.
       </p>
 
       <div className="bg-[#111827] border border-cyan-500 rounded-2xl px-8 py-6 w-full max-w-xl space-y-6 shadow-xl">
-        <label className="flex items-center space-x-4 text-cyan-200 font-semibold">
-          <input
-            type="checkbox"
-            checked={withNFT}
-            onChange={() => setWithNFT(!withNFT)}
-            className="w-5 h-5 accent-cyan-500"
-          />
-          <span>Mint Promotional NFT (+0.75 BNB)</span>
-        </label>
-
         <div className="text-lg font-bold text-cyan-300">
-          Estimated Total Fee: <span className="text-white">{totalCost.toFixed(2)} BNB</span>
+          Total Fee: <span className="text-white">{totalCost.toFixed(2)} BNB</span>
         </div>
 
         <div className="text-sm text-orange-300 font-medium">
@@ -188,22 +158,8 @@ export default function PromoPage() {
           onClick={handleConfirm}
           className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
         >
-          Confirm & Approve Lock
+          Confirm & Lock
         </button>
-      </div>
-
-      <div className="mt-4 text-center">
-        <p className="text-cyan-300 mb-4 font-semibold text-xl">Example Promotion NFT</p>
-        <div className="text-sm text-gray-400 max-w-sm mx-auto mb-2">
-          This NFT is minted to your wallet as proof your lock exists on-chain.
-        </div>
-        <div className="relative w-[330px] md:w-[360px] rounded-2xl overflow-hidden border-2 border-cyan-500 shadow-[0_0_20px_#00e5ff80] bg-black">
-          <img
-            src="https://indigo-added-salamander-982.mypinata.cloud/ipfs/bafybeifytypsenulzzlg5wq522sldamklrv4ss4n6sut5p5r5x6aigvqgm"
-            alt="Divi Vault NFT"
-            className="w-full h-[450px] object-cover opacity-95"
-          />
-        </div>
       </div>
     </div>
   );
