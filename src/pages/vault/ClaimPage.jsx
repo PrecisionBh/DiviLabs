@@ -34,7 +34,27 @@ export default function ClaimPage() {
         const notWithdrawn = !lock.withdrawn;
 
         if (isCreator && isUnlocked && notWithdrawn) {
-          claimables.push({ lockId: i, ...lock });
+          let symbol = "UNKNOWN";
+          let decimals = 18;
+
+          try {
+            const tokenContract = new ethers.Contract(lock.token, [
+              "function symbol() view returns (string)",
+              "function decimals() view returns (uint8)"
+            ], provider);
+
+            symbol = await tokenContract.symbol();
+            decimals = await tokenContract.decimals();
+          } catch (err) {
+            console.warn("Could not fetch token metadata for", lock.token, err);
+          }
+
+          claimables.push({
+            lockId: i,
+            ...lock,
+            symbol,
+            decimals
+          });
         }
       }
 
@@ -97,7 +117,7 @@ export default function ClaimPage() {
             let formattedAmount = "Unknown";
             try {
               if (rawAmount && rawAmount !== "0") {
-                formattedAmount = ethers.formatUnits(rawAmount.toString(), 18);
+                formattedAmount = ethers.formatUnits(rawAmount.toString(), lock.decimals || 18);
               }
             } catch (err) {
               console.warn("Failed to format amount:", rawAmount, err);
@@ -114,6 +134,7 @@ export default function ClaimPage() {
               >
                 <p className="font-bold text-cyan-300 mb-1">Lock ID: {lock.lockId}</p>
                 <p className="text-sm text-white break-all">Token Contract: {tokenAddress}</p>
+                <p className="text-sm text-white">Token Symbol: {lock.symbol}</p>
                 <p className="text-sm text-white">Locked Amount: {formattedAmount}</p>
                 <p className="text-sm text-white">Unlock Time: {unlockTime}</p>
 
