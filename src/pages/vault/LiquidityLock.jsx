@@ -2,11 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ethers, parseUnits } from "ethers";
 
-const CONTRACT_ADDRESS = "0x27Ce0569B5f865A1C1F6fA36D66cE07ca329ce35";
-const CONTRACT_ABI = [
-  "function lockTokens(address token, uint256 amount, uint256 unlockTime, uint8 lockType, string calldata metadata) external payable"
-];
-
 export default function LiquidityLock() {
   const navigate = useNavigate();
 
@@ -18,9 +13,6 @@ export default function LiquidityLock() {
   const [lockName, setLockName] = useState("");
   const [socialLink, setSocialLink] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
-
-  const baseCost = 0.25;
-  const totalCost = baseCost.toFixed(2);
 
   const handlePercentageChange = (value) => {
     setPercentageToLock(value);
@@ -69,38 +61,23 @@ export default function LiquidityLock() {
     }
   };
 
-  const handleLock = async () => {
+  const handleNext = () => {
     if (!lpBalance || !calculatedAmount || !daysToLock || !lpAddress) {
       alert("Please fill in all fields correctly.");
       return;
     }
 
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+    const lockPayload = {
+      lpAddress,
+      calculatedAmount,
+      daysToLock,
+      lockName,
+      socialLink,
+      websiteLink
+    };
 
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const decimals = 18; // Assuming LP tokens use 18 decimals
-      const amount = parseUnits(calculatedAmount, decimals);
-      const unlockTime = Math.floor(Date.now() / 1000) + parseInt(daysToLock) * 86400;
-      const metadata = JSON.stringify({ lockName, socialLink, websiteLink });
-
-      const tx = await contract.lockTokens(
-        lpAddress,
-        amount,
-        unlockTime,
-        0, // lockType = 0 for LP lock
-        metadata,
-        { value: parseUnits(totalCost, "ether") }
-      );
-
-      await tx.wait();
-      alert("✅ Lock successful!");
-      navigate("/vault/result");
-    } catch (err) {
-      console.error("Lock failed:", err);
-      alert("❌ Lock failed. See console for details.");
-    }
+    localStorage.setItem("diviLockData", JSON.stringify(lockPayload));
+    navigate("/vault/promo");
   };
 
   return (
@@ -170,6 +147,7 @@ export default function LiquidityLock() {
           placeholder="https://yourproject.com (optional)"
           className="w-full bg-gray-900 text-white p-3 rounded-xl border border-cyan-500"
         />
+
         <input
           type="text"
           value={socialLink}
@@ -179,10 +157,10 @@ export default function LiquidityLock() {
         />
 
         <button
-          onClick={handleLock}
+          onClick={handleNext}
           className="w-full py-3 mt-6 rounded-xl font-bold bg-cyan-500 hover:bg-cyan-600 text-black"
         >
-          Lock Liquidity
+          Continue to Promo
         </button>
       </div>
     </div>
