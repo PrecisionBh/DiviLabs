@@ -11,28 +11,35 @@ const CONTRACT_ABI = [
 
 export default function ClaimPage() {
   const { walletAddress, connectWallet } = useWallet();
-  const [claimableLocks, setClaimableLocks] = useState([]);
+  const [locks, setLocks] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (walletAddress) fetchClaimableLocks();
+    if (walletAddress) fetchLocks();
   }, [walletAddress]);
 
-  const fetchClaimableLocks = async () => {
+  const fetchLocks = async () => {
     setLoading(true);
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
       const totalLocks = await contract.nextLockId();
-      const claimables = [];
+      const userLocks = [];
 
       for (let i = 0; i < totalLocks; i++) {
         const lock = await contract.locks(i);
-        const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
-        const isUnlocked = Number(lock.unlockTime || 0) <= Date.now() / 1000;
-        const notWithdrawn = !lock.withdrawn;
 
-        if (isCreator && isUnlocked && notWithdrawn) {
+        console.log(`🔎 Lock ID ${i}:`, {
+          token: lock.token,
+          amount: lock.amount?.toString(),
+          unlockTime: lock.unlockTime?.toString(),
+          creator: lock.creator,
+          withdrawn: lock.withdrawn
+        });
+
+        const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
+
+        if (isCreator) {
           let symbol = "Unknown";
           let decimals = 18;
           let formattedAmount = "Unknown";
@@ -58,16 +65,19 @@ export default function ClaimPage() {
             console.warn("Token metadata fetch failed for:", lock.token, err);
           }
 
-          claimables.push({
+          userLocks.push({
             lockId: i,
             symbol,
             amount: formattedAmount,
-            unlockTime: unlockTimeFormatted
+            unlockTime: unlockTimeFormatted,
+            rawUnlockTime: Number(lock.unlockTime),
+            withdrawn: lock.withdrawn,
+            isUnlocked: Number(lock.unlockTime) <= Date.now() / 1000
           });
         }
       }
 
-      setClaimableLocks(claimables);
+      setLocks(userLocks);
     } catch (err) {
       console.error("Error loading locks:", err);
     }
@@ -84,7 +94,7 @@ export default function ClaimPage() {
       await tx.wait();
 
       alert(`✅ Lock #${lockId} claimed successfully.`);
-      fetchClaimableLocks();
+      fetchLocks();
     } catch (err) {
       console.error("Claim failed:", err);
       alert("❌ Claim failed. See console for details.");
@@ -94,7 +104,7 @@ export default function ClaimPage() {
   return (
     <div className="min-h-screen bg-[#070B17] text-white px-6 py-12">
       <h1 className="text-center text-4xl font-bold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff] mb-8">
-        Claim Your Locked Tokens
+        Developer Lock Debug View
       </h1>
 
       {!walletAddress && (
@@ -109,31 +119,36 @@ export default function ClaimPage() {
       )}
 
       {loading && (
-        <p className="text-center text-cyan-300 animate-pulse mt-6">Loading claimable locks...</p>
+        <p className="text-center text-cyan-300 animate-pulse mt-6">Loading all user locks...</p>
       )}
 
-      {walletAddress && !loading && claimableLocks.length === 0 && (
-        <p className="text-center text-cyan-500 mt-6">No claimable locks found.</p>
+      {walletAddress && !loading && locks.length === 0 && (
+        <p className="text-center text-cyan-500 mt-6">No locks found for this wallet.</p>
       )}
 
-      {claimableLocks.length > 0 && (
+      {locks.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-5xl mx-auto">
-          {claimableLocks.map((lock, idx) => (
+          {locks.map((lock, idx) => (
             <div
               key={idx}
               className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
             >
               <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
-              <p className="text-sm text-white">Token Symbol: {lock.symbol}</p>
-              <p className="text-sm text-white">Locked Amount: {lock.amount}</p>
-              <p className="text-sm text-white">Unlock Time: {lock.unlockTime}</p>
+              <p className="text-sm">Token Symbol: {lock.symbol}</p>
+              <p className="text-sm">Locked Amount: {lock.amount}</p>
+              <p className="text-sm">Unlock Time: {lock.unlockTime}</p>
+              <p className={`text-sm ${lock.withdrawn ? "text-red-400" : "text-green-400"}`}>
+                Status: {lock.withdrawn ? "Withdrawn" : lock.isUnlocked ? "Unlocked & Claimable" : "Still Locked"}
+              </p>
 
-              <button
-                onClick={() => handleClaim(lock.lockId)}
-                className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
-              >
-                🔓 Claim Now
-              </button>
+              {!lock.withdrawn && lock.isUnlocked && (
+                <button
+                  onClick={() => handleClaim(lock.lockId)}
+                  className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
+                >
+                  🔓 Claim Now
+                </button>
+              )}
             </div>
           ))}
         </div>
