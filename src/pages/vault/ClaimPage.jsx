@@ -12,8 +12,10 @@ const CONTRACT_ABI = [
 export default function ClaimPage() {
   const { walletAddress, connectWallet } = useWallet();
   const [locks, setLocks] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [hiddenLockIds, setHiddenLockIds] = useState([]);
+  const [showHidden, setShowHidden] = useState(false);
+  const [confirmDismissId, setConfirmDismissId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (walletAddress) fetchLocks();
@@ -29,10 +31,8 @@ export default function ClaimPage() {
 
       for (let i = 0; i < totalLocks; i++) {
         const lock = await contract.locks(i);
-
         const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
         const notWithdrawn = !lock.withdrawn;
-
         if (!isCreator || !notWithdrawn) continue;
 
         let symbol = "Unknown";
@@ -45,11 +45,9 @@ export default function ClaimPage() {
             "function symbol() view returns (string)",
             "function decimals() view returns (uint8)"
           ], provider);
-
           symbol = await tokenContract.symbol();
           decimals = await tokenContract.decimals();
           formattedAmount = ethers.formatUnits(lock.amount.toString(), decimals);
-
           if (lock.unlockTime && Number(lock.unlockTime) > 0) {
             unlockTimeFormatted = new Date(Number(lock.unlockTime) * 1000).toLocaleString();
           }
@@ -95,11 +93,32 @@ export default function ClaimPage() {
     }
   };
 
+  const dismissLock = (lockId) => {
+    setHiddenLockIds((prev) => [...prev, lockId]);
+    setConfirmDismissId(null); // Close confirm modal
+  };
+
+  const filteredLocks = locks.filter(
+    (lock) => showHidden || !hiddenLockIds.includes(lock.lockId)
+  );
+
   return (
     <div className="min-h-screen bg-[#070B17] text-white px-6 py-12">
-      <h1 className="text-center text-4xl font-bold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff] mb-8">
+      <h1 className="text-center text-4xl font-bold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff] mb-6">
         Claim or View Your Locked Tokens
       </h1>
+
+      <div className="flex justify-center mb-6">
+        <label className="flex items-center gap-2 text-sm text-cyan-200">
+          <input
+            type="checkbox"
+            checked={showHidden}
+            onChange={() => setShowHidden(!showHidden)}
+            className="accent-cyan-500 w-4 h-4"
+          />
+          Show Hidden Locks
+        </label>
+      </div>
 
       {!walletAddress && (
         <div className="text-center">
@@ -116,47 +135,70 @@ export default function ClaimPage() {
         <p className="text-center text-cyan-300 animate-pulse mt-6">Loading your locks...</p>
       )}
 
-      {walletAddress && !loading && locks.filter((l) => !hiddenLockIds.includes(l.lockId)).length === 0 && (
+      {walletAddress && !loading && filteredLocks.length === 0 && (
         <p className="text-center text-cyan-500 mt-6">No active locks found.</p>
       )}
 
-      {locks.length > 0 && (
+      {filteredLocks.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-5xl mx-auto">
-          {locks
-            .filter((lock) => !hiddenLockIds.includes(lock.lockId))
-            .map((lock, idx) => {
-              const isUnlocked = Number(lock.unlockTime) <= Date.now() / 1000;
+          {filteredLocks.map((lock, idx) => {
+            const isUnlocked = Number(lock.unlockTime) <= Date.now() / 1000;
 
-              return (
-                <div
-                  key={idx}
-                  className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
-                >
-                  <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
-                  <p className="text-sm">Token Symbol: {lock.symbol}</p>
-                  <p className="text-sm">Locked Amount: {lock.amount}</p>
-                  <p className="text-sm">
-                    {isUnlocked ? "✅ Unlock Available" : `🔒 Unlocks At: ${lock.unlockTimeFormatted}`}
-                  </p>
+            return (
+              <div
+                key={idx}
+                className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
+              >
+                <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
+                <p className="text-sm">Token Symbol: {lock.symbol}</p>
+                <p className="text-sm">Locked Amount: {lock.amount}</p>
+                <p className="text-sm">
+                  {isUnlocked ? "✅ Unlock Available" : `🔒 Unlocks At: ${lock.unlockTimeFormatted}`}
+                </p>
 
-                  {isUnlocked && (
-                    <button
-                      onClick={() => handleClaim(lock.lockId)}
-                      className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
-                    >
-                      🔓 Claim Now
-                    </button>
-                  )}
-
+                {isUnlocked && (
                   <button
-                    onClick={() => setHiddenLockIds((prev) => [...prev, lock.lockId])}
-                    className="mt-2 w-full py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition text-sm"
+                    onClick={() => handleClaim(lock.lockId)}
+                    className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
                   >
-                    🗑️ Hide This Lock (UI Only)
+                    🔓 Claim Now
                   </button>
-                </div>
-              );
-            })}
+                )}
+
+                <button
+                  onClick={() => setConfirmDismissId(lock.lockId)}
+                  className="mt-2 w-full py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition text-sm"
+                >
+                  🧹 Dismiss Lock
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 🔒 Confirm Modal */}
+      {confirmDismissId !== null && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center p-6">
+          <div className="bg-[#0e1016] p-6 rounded-xl border border-cyan-500 max-w-sm w-full space-y-4 text-center">
+            <p className="text-cyan-300 text-lg font-semibold">
+              Are you sure you want to dismiss Lock #{confirmDismissId}?
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => dismissLock(confirmDismissId)}
+                className="bg-cyan-500 text-black px-4 py-2 font-bold rounded-lg hover:bg-cyan-600 transition"
+              >
+                Yes, Dismiss
+              </button>
+              <button
+                onClick={() => setConfirmDismissId(null)}
+                className="bg-gray-700 text-white px-4 py-2 font-bold rounded-lg hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
