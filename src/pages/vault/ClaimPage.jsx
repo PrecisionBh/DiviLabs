@@ -23,7 +23,6 @@ export default function ClaimPage() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-
       const totalLocks = await contract.nextLockId();
       const claimables = [];
 
@@ -34,8 +33,10 @@ export default function ClaimPage() {
         const notWithdrawn = !lock.withdrawn;
 
         if (isCreator && isUnlocked && notWithdrawn) {
-          let symbol = "UNKNOWN";
+          let symbol = "Unknown";
           let decimals = 18;
+          let formattedAmount = "Unknown";
+          let unlockTimeFormatted = "Unknown";
 
           try {
             const tokenContract = new ethers.Contract(lock.token, [
@@ -45,22 +46,30 @@ export default function ClaimPage() {
 
             symbol = await tokenContract.symbol();
             decimals = await tokenContract.decimals();
+
+            if (lock.amount) {
+              formattedAmount = ethers.formatUnits(lock.amount.toString(), decimals);
+            }
+
+            if (lock.unlockTime && Number(lock.unlockTime) > 0) {
+              unlockTimeFormatted = new Date(Number(lock.unlockTime) * 1000).toLocaleString();
+            }
           } catch (err) {
-            console.warn("Could not fetch token metadata for", lock.token, err);
+            console.warn("Token metadata fetch failed for:", lock.token, err);
           }
 
           claimables.push({
             lockId: i,
-            ...lock,
             symbol,
-            decimals
+            amount: formattedAmount,
+            unlockTime: unlockTimeFormatted
           });
         }
       }
 
       setClaimableLocks(claimables);
     } catch (err) {
-      console.error("Failed to fetch claimable locks:", err);
+      console.error("Error loading locks:", err);
     }
     setLoading(false);
   };
@@ -74,11 +83,11 @@ export default function ClaimPage() {
       const tx = await contract.claim(lockId);
       await tx.wait();
 
-      alert(`✅ Successfully claimed Lock #${lockId}`);
+      alert(`✅ Lock #${lockId} claimed successfully.`);
       fetchClaimableLocks();
     } catch (err) {
       console.error("Claim failed:", err);
-      alert("❌ Claim failed");
+      alert("❌ Claim failed. See console for details.");
     }
   };
 
@@ -108,45 +117,25 @@ export default function ClaimPage() {
       )}
 
       {claimableLocks.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-4xl mx-auto">
-          {claimableLocks.map((lock, idx) => {
-            const tokenAddress = lock.token || "Unknown";
-            const rawAmount = lock.amount || 0;
-            const unlockTs = Number(lock.unlockTime || 0);
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-5xl mx-auto">
+          {claimableLocks.map((lock, idx) => (
+            <div
+              key={idx}
+              className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
+            >
+              <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
+              <p className="text-sm text-white">Token Symbol: {lock.symbol}</p>
+              <p className="text-sm text-white">Locked Amount: {lock.amount}</p>
+              <p className="text-sm text-white">Unlock Time: {lock.unlockTime}</p>
 
-            let formattedAmount = "Unknown";
-            try {
-              if (rawAmount && rawAmount !== "0") {
-                formattedAmount = ethers.formatUnits(rawAmount.toString(), lock.decimals || 18);
-              }
-            } catch (err) {
-              console.warn("Failed to format amount:", rawAmount, err);
-            }
-
-            const unlockTime = unlockTs > 0
-              ? new Date(unlockTs * 1000).toLocaleString()
-              : "Unknown";
-
-            return (
-              <div
-                key={idx}
-                className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50]"
+              <button
+                onClick={() => handleClaim(lock.lockId)}
+                className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
               >
-                <p className="font-bold text-cyan-300 mb-1">Lock ID: {lock.lockId}</p>
-                <p className="text-sm text-white break-all">Token Contract: {tokenAddress}</p>
-                <p className="text-sm text-white">Token Symbol: {lock.symbol}</p>
-                <p className="text-sm text-white">Locked Amount: {formattedAmount}</p>
-                <p className="text-sm text-white">Unlock Time: {unlockTime}</p>
-
-                <button
-                  onClick={() => handleClaim(lock.lockId)}
-                  className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
-                >
-                  🔓 Claim Now
-                </button>
-              </div>
-            );
-          })}
+                🔓 Claim Now
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
