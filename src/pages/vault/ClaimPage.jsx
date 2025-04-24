@@ -13,6 +13,7 @@ export default function ClaimPage() {
   const { walletAddress, connectWallet } = useWallet();
   const [locks, setLocks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hiddenLockIds, setHiddenLockIds] = useState([]);
 
   useEffect(() => {
     if (walletAddress) fetchLocks();
@@ -32,7 +33,7 @@ export default function ClaimPage() {
         const isCreator = lock.creator?.toLowerCase() === walletAddress.toLowerCase();
         const notWithdrawn = !lock.withdrawn;
 
-        if (!isCreator || !notWithdrawn) continue; // 🚀 Skip claimed or unrelated locks
+        if (!isCreator || !notWithdrawn) continue;
 
         let symbol = "Unknown";
         let decimals = 18;
@@ -82,8 +83,6 @@ export default function ClaimPage() {
       await tx.wait();
 
       alert(`✅ Lock #${lockId} claimed successfully.`);
-
-      // 🚀 Instantly remove the claimed lock from UI
       setLocks((prevLocks) => prevLocks.filter((lock) => lock.lockId !== lockId));
     } catch (err) {
       if (err?.reason === "Already withdrawn") {
@@ -117,38 +116,47 @@ export default function ClaimPage() {
         <p className="text-center text-cyan-300 animate-pulse mt-6">Loading your locks...</p>
       )}
 
-      {walletAddress && !loading && locks.length === 0 && (
+      {walletAddress && !loading && locks.filter((l) => !hiddenLockIds.includes(l.lockId)).length === 0 && (
         <p className="text-center text-cyan-500 mt-6">No active locks found.</p>
       )}
 
       {locks.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-5xl mx-auto">
-          {locks.map((lock, idx) => {
-            const isUnlocked = Number(lock.unlockTime) <= Date.now() / 1000;
+          {locks
+            .filter((lock) => !hiddenLockIds.includes(lock.lockId))
+            .map((lock, idx) => {
+              const isUnlocked = Number(lock.unlockTime) <= Date.now() / 1000;
 
-            return (
-              <div
-                key={idx}
-                className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
-              >
-                <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
-                <p className="text-sm">Token Symbol: {lock.symbol}</p>
-                <p className="text-sm">Locked Amount: {lock.amount}</p>
-                <p className="text-sm">
-                  {isUnlocked ? "✅ Unlock Available" : `🔒 Unlocks At: ${lock.unlockTimeFormatted}`}
-                </p>
+              return (
+                <div
+                  key={idx}
+                  className="bg-[#0e1016] border border-cyan-500 rounded-xl p-6 shadow-[0_0_20px_#00e5ff50] text-white space-y-2"
+                >
+                  <p className="font-bold text-cyan-300 text-lg">Lock ID: {lock.lockId}</p>
+                  <p className="text-sm">Token Symbol: {lock.symbol}</p>
+                  <p className="text-sm">Locked Amount: {lock.amount}</p>
+                  <p className="text-sm">
+                    {isUnlocked ? "✅ Unlock Available" : `🔒 Unlocks At: ${lock.unlockTimeFormatted}`}
+                  </p>
 
-                {isUnlocked && (
+                  {isUnlocked && (
+                    <button
+                      onClick={() => handleClaim(lock.lockId)}
+                      className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
+                    >
+                      🔓 Claim Now
+                    </button>
+                  )}
+
                   <button
-                    onClick={() => handleClaim(lock.lockId)}
-                    className="mt-4 w-full py-2 bg-cyan-500 text-black font-bold rounded-full hover:bg-cyan-600 transition"
+                    onClick={() => setHiddenLockIds((prev) => [...prev, lock.lockId])}
+                    className="mt-2 w-full py-2 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition text-sm"
                   >
-                    🔓 Claim Now
+                    🗑️ Hide This Lock (UI Only)
                   </button>
-                )}
-              </div>
-            );
-          })}
+                </div>
+              );
+            })}
         </div>
       )}
     </div>
