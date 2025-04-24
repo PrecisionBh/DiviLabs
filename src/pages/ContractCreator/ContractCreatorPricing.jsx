@@ -41,7 +41,7 @@ export default function ContractCreatorPricing() {
             <li>Simple deploy-ready BEP-20</li>
             <li>No advanced features</li>
           </ul>
-          <p className="text-cyan-400 font-semibold text-lg">0.5 BNB</p>
+          <p className="text-cyan-400 font-semibold text-lg">0.1 BNB</p>
         </div>
 
         {/* Advanced Card */}
@@ -58,7 +58,7 @@ export default function ContractCreatorPricing() {
             <li>Anti-bot protection</li>
             <li>Max wallet / tx limits</li>
           </ul>
-          <p className="text-cyan-400 font-semibold text-lg">1 BNB</p>
+          <p className="text-cyan-400 font-semibold text-lg">0.2 BNB</p>
         </div>
       </div>
 
