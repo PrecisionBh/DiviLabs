@@ -84,7 +84,7 @@ export default function BuyNodes() {
               <img
                 src={node.image}
                 alt={node.type}
-                className="w-full h-64 object-cover rounded-xl mb-4"
+                className="w-full h-64 object-contain bg-black rounded-xl mb-4"
               />
               <h2 className="text-2xl font-bold text-cyan-300 mb-2">{node.type}</h2>
               <p className="text-cyan-200 font-semibold">{node.bnb}</p>
@@ -123,10 +123,7 @@ async function handleBuy(nodeId, setShowSuccess) {
     const tx = await contract.buyNode(nodeId, { value });
     await tx.wait();
 
-    // ✅ Show modal
     setShowSuccess(true);
-
-    // ⏳ Wait 3 seconds then redirect
     setTimeout(() => {
       window.location.href = "/nodes/claim";
     }, 3000);
