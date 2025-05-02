@@ -11,7 +11,7 @@ export default function EcosystemHome() {
     { title: "Contract Creator", path: "/contract-creator" },
     { title: "Token Auditor", path: "/auditor" },
     { title: "Staking Platform", path: "/staking/start" },
-    { title: "Divi Docs", path: "/docs" },
+    { title: "Divi Nodes", path: "/nodes" },
   ];
 
   return (
@@ -25,9 +25,9 @@ export default function EcosystemHome() {
         </p>
       </div>
 
-      {/* 🔥 Countdown Box */}
       <CountdownBox />
 
+      {/* Tool Buttons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mt-12 mb-10">
         {pages.map((page, index) => (
           <div
@@ -38,6 +38,16 @@ export default function EcosystemHome() {
             <h2 className="text-2xl font-bold text-cyan-300">{page.title}</h2>
           </div>
         ))}
+      </div>
+
+      {/* Centered Divi Docs Button */}
+      <div className="flex justify-center mb-12">
+        <div
+          onClick={() => navigate("/docs")}
+          className="cursor-pointer bg-[#0e1016] border border-cyan-500 rounded-2xl px-8 py-6 shadow-[0_0_30px_#00e5ff60] hover:shadow-[0_0_40px_#00e5ff80] transition text-center"
+        >
+          <h2 className="text-2xl font-bold text-cyan-300">Divi Docs</h2>
+        </div>
       </div>
 
       {/* Social Buttons */}

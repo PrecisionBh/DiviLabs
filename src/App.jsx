@@ -52,7 +52,12 @@ import OnboardProject from './pages/staking/OnboardProject';
 import UserDashboard from './pages/staking/UserDashboard';
 import StakePage from './pages/staking/StakePage';
 import StakeSuccess from './pages/staking/StakeSuccess';
-import DevDashboard from './pages/staking/DevDashboard'; // ✅ NEW
+import DevDashboard from './pages/staking/DevDashboard';
+
+// Node Pages
+import BuyNodes from './pages/nodes/BuyNodes';
+import ClaimDashboard from './pages/nodes/ClaimDashboard';
+
 
 export default function App() {
   return (
@@ -110,7 +115,12 @@ export default function App() {
         <Route path="/staking/user" element={<UserDashboard />} />
         <Route path="/staking/pool/:address" element={<StakePage />} />
         <Route path="/staking/success" element={<StakeSuccess />} />
-        <Route path="/staking/dev" element={<DevDashboard />} /> {/* ✅ NEW */}
+        <Route path="/staking/dev" element={<DevDashboard />} />
+
+        {/* Nodes */}
+        <Route path="/nodes" element={<Navigate to="/nodes/buy" />} />
+        <Route path="/nodes/buy" element={<BuyNodes />} />
+        <Route path="/nodes/claim" element={<ClaimDashboard />} />
       </Routes>
     </Router>
   );
