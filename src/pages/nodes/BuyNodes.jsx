@@ -1,11 +1,8 @@
 import React, { useState } from "react";
-import {
-  BrowserProvider,
-  Contract,
-  parseEther
-} from "ethers";
-
+import { useWallet } from "../../context/WalletContext";
+import { ethers } from "ethers";
 import DiviNodeOwnershipABI from "../../abis/DiviNodeOwnership.json";
+import { useNavigate } from "react-router-dom";
 
 import bullImg from "../../assets/Bull.jpeg";
 import apeImg from "../../assets/Ape.jpeg";
@@ -16,50 +13,84 @@ const NODE_CONTRACT_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
 const nodes = [
   {
     type: "Bull Node",
+    tier: "Bull",
     image: bullImg,
     bnb: "2.75 BNB",
     reward: "50% of all node rewards",
     quote: "The apex predator of passive income. Own the charge.",
-    nodeId: 0,
   },
   {
     type: "Ape Node",
+    tier: "Ape",
     image: apeImg,
     bnb: "1.75 BNB",
     reward: "35% of all node rewards",
     quote: "Strong hands. Banana dreams. Mid-tier yield, max-tier vibes.",
-    nodeId: 1,
   },
   {
     type: "Sloth Node",
+    tier: "Sloth",
     image: slothImg,
     bnb: "0.75 BNB",
     reward: "15% of all node rewards",
     quote: "Why hustle when you can coast? Earn while you nap.",
-    nodeId: 2,
   },
 ];
 
 export default function BuyNodes() {
+  const { walletAddress } = useWallet();
   const [showSuccess, setShowSuccess] = useState(false);
+  const navigate = useNavigate();
+
+  const getAvailableNodeId = async (start, end, contract) => {
+    for (let id = start; id <= end; id++) {
+      try {
+        const owner = await contract.ownerOf(id);
+        if (owner === ethers.ZeroAddress) return id;
+      } catch (err) {
+        // Not minted or unowned
+        return id;
+      }
+    }
+    throw new Error("All nodes sold out in this tier");
+  };
+
+  const handleBuy = async (tier) => {
+    if (!walletAddress) return alert("Please connect wallet first.");
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(
+        NODE_CONTRACT_ADDRESS,
+        DiviNodeOwnershipABI,
+        signer
+      );
+
+      const tierInfo = {
+        Bull: { start: 0, end: 9, price: "2.75" },
+        Ape: { start: 10, end: 19, price: "1.75" },
+        Sloth: { start: 20, end: 29, price: "0.75" },
+      };
+
+      const { start, end, price } = tierInfo[tier];
+      const availableNodeId = await getAvailableNodeId(start, end, contract);
+
+      const tx = await contract.buyNode(availableNodeId, {
+        value: ethers.parseEther(price),
+      });
+      await tx.wait();
+
+      setShowSuccess(true);
+      setTimeout(() => navigate("/nodes/claim"), 2000);
+    } catch (err) {
+      console.error("Buy failed:", err);
+      alert("Transaction failed or all nodes in this tier are sold.");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#060a13] text-white px-6 py-12 relative">
-      {/* ✅ Success Modal */}
-      {showSuccess && (
-        <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-70 z-50">
-          <div className="bg-[#0e1016] border border-cyan-400 text-center rounded-2xl px-8 py-10 shadow-[0_0_45px_#00e5ff] animate-pulse">
-            <h2 className="text-3xl font-extrabold text-cyan-400 mb-4">
-              🎉 Congratulations!
-            </h2>
-            <p className="text-white text-lg">
-              You are now part owner of <span className="text-cyan-300 font-bold">Divi</span>!
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="text-center mb-12">
+    <div className="min-h-screen bg-[#060a13] text-white px-6 py-12">
+      <div className="text-center mb-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-400 drop-shadow-[0_0_25px_#00e5ff]">
           Buy a Divi Node
         </h1>
@@ -67,8 +98,8 @@ export default function BuyNodes() {
           Only 30 nodes will ever exist. Own a slice of every transaction.
         </p>
         <button
+          onClick={() => navigate("/nodes/claim")}
           className="mt-6 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
-          onClick={() => window.location.href = "/nodes/claim"}
         >
           Go to My Node
         </button>
@@ -78,57 +109,41 @@ export default function BuyNodes() {
         {nodes.map((node, index) => (
           <div
             key={index}
-            className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-6 shadow-[0_0_30px_#00e5ff60] hover:shadow-[0_0_40px_#00e5ff80] transition text-center flex flex-col justify-between"
+            className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-6 shadow-[0_0_30px_#00e5ff60] hover:shadow-[0_0_40px_#00e5ff80] transition text-center"
           >
-            <div>
-              <img
-                src={node.image}
-                alt={node.type}
-                className="w-full h-64 object-contain bg-black rounded-xl mb-4"
-              />
-              <h2 className="text-2xl font-bold text-cyan-300 mb-2">{node.type}</h2>
-              <p className="text-cyan-200 font-semibold">{node.bnb}</p>
-              <p className="text-cyan-400 mt-2 italic">{node.reward}</p>
-              <p className="text-cyan-500 mt-4 text-sm">{node.quote}</p>
-            </div>
+            <img
+              src={node.image}
+              alt={node.type}
+              className="w-full h-80 object-contain rounded-xl mb-4"
+            />
+            <h2 className="text-2xl font-bold text-cyan-300 mb-2">
+              {node.type}
+            </h2>
+            <p className="text-cyan-200 font-semibold">{node.bnb}</p>
+            <p className="text-cyan-400 mt-2 italic">{node.reward}</p>
+            <p className="text-cyan-500 mt-4 text-sm">{node.quote}</p>
             <button
               className="mt-6 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
-              onClick={() => handleBuy(node.nodeId, setShowSuccess)}
+              onClick={() => handleBuy(node.tier)}
             >
               Buy Now
             </button>
           </div>
         ))}
       </div>
+
+      {showSuccess && (
+        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-[#000000bb] z-50">
+          <div className="bg-[#0e1016] border border-cyan-500 rounded-2xl p-10 shadow-[0_0_40px_#00e5ff] text-center text-white max-w-md">
+            <h2 className="text-2xl font-bold text-cyan-300">
+              🎉 Congratulations!
+            </h2>
+            <p className="mt-4 text-cyan-100">
+              You are now part owner of Divi!
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
-
-async function handleBuy(nodeId, setShowSuccess) {
-  if (!window.ethereum) {
-    alert("MetaMask is required!");
-    return;
-  }
-
-  const provider = new BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
-  const contract = new Contract(NODE_CONTRACT_ADDRESS, DiviNodeOwnershipABI, signer);
-
-  let value;
-  if (nodeId === 0) value = parseEther("2.75");
-  else if (nodeId === 1) value = parseEther("1.75");
-  else value = parseEther("0.75");
-
-  try {
-    const tx = await contract.buyNode(nodeId, { value });
-    await tx.wait();
-
-    setShowSuccess(true);
-    setTimeout(() => {
-      window.location.href = "/nodes/claim";
-    }, 3000);
-  } catch (err) {
-    console.error("Buy failed:", err);
-    alert("Transaction failed or cancelled.");
-  }
 }
