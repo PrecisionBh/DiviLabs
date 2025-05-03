@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { BrowserProvider, Contract, formatEther } from "ethers";
+import {
+  BrowserProvider,
+  Contract,
+  formatEther
+} from "ethers";
 
 import DiviNodeOwnershipABI from "../../abis/DiviNodeOwnership.json";
 import RewardDistributorABI from "../../abis/DiviNodeRewardDistributor.json";
@@ -12,65 +16,72 @@ const NODE_OWNERSHIP_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
 const REWARD_DISTRIBUTOR_ADDRESS = "0xCaA359c93E7ecD9C92486a03B5692A506BfFaFc2";
 
 export default function ClaimDashboard() {
+  const [ownedNodes, setOwnedNodes] = useState([]);
+  const [rewards, setRewards] = useState({});
   const [account, setAccount] = useState("");
-  const [grouped, setGrouped] = useState({ 0: [], 1: [], 2: [] });
   const [totalRewards, setTotalRewards] = useState("0.0000");
+  const [groupedByType, setGroupedByType] = useState({});
 
   useEffect(() => {
-    loadNodes();
+    loadNodeData();
   }, []);
 
-  const loadNodes = async () => {
+  const loadNodeData = async () => {
     if (!window.ethereum) {
-      alert("Please install MetaMask!");
+      alert("MetaMask is required!");
       return;
     }
 
     const provider = new BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const address = await signer.getAddress();
-    setAccount(address);
+    const userAddress = await signer.getAddress();
+    setAccount(userAddress);
 
     const nodeContract = new Contract(NODE_OWNERSHIP_ADDRESS, DiviNodeOwnershipABI, signer);
-    const rewardContract = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
+    const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
 
     try {
-      const owned = await nodeContract.getOwnedNodes(address); // [10, 11, 22, ...]
-      const nodeMap = { 0: [], 1: [], 2: [] };
+      const owned = await nodeContract.getOwnedNodes(userAddress); // returns [uint256[]]
+      setOwnedNodes(owned);
+
+      const rewardData = {};
       let total = 0;
+      const grouped = { 0: [], 1: [], 2: [] };
 
       for (let i = 0; i < owned.length; i++) {
         const nodeId = owned[i];
-        const [type] = await nodeContract.getNode(nodeId);
-        const reward = await rewardContract.nodeClaimableBNB(nodeId);
-        const formatted = parseFloat(formatEther(reward));
+        const nodeInfo = await nodeContract.getNode(nodeId);
+        const nodeType = Number(nodeInfo[0]);
 
-        nodeMap[type].push({ id: nodeId, reward: formatted });
+        const reward = await distributor.nodeClaimableBNB(nodeId);
+        const formatted = parseFloat(formatEther(reward));
+        rewardData[`${nodeType}-${nodeId}`] = formatted.toFixed(4);
         total += formatted;
+        grouped[nodeType].push({ index: nodeId, reward: formatted });
       }
 
-      setGrouped(nodeMap);
+      setGroupedByType(grouped);
+      setRewards(rewardData);
       setTotalRewards(total.toFixed(4));
     } catch (err) {
-      console.error("Error loading node data:", err);
+      console.error("Error loading nodes:", err);
     }
   };
 
-  const claimAll = async () => {
+  const claimAllRewards = async () => {
     const provider = new BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const rewardContract = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
-
-    const allNodeIds = [...grouped[0], ...grouped[1], ...grouped[2]].map(n => n.id);
+    const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
 
     try {
-      const tx = await rewardContract.claimMultiple(allNodeIds);
+      const nodeIds = ownedNodes;
+      const tx = await distributor.claimMultiple(nodeIds);
       await tx.wait();
-      alert("BNB claimed!");
-      loadNodes();
+      alert("All rewards claimed!");
+      loadNodeData();
     } catch (err) {
-      console.error("Claim failed:", err);
-      alert("Claim failed or was rejected.");
+      console.error("Claim All failed:", err);
+      alert("Claim failed or cancelled.");
     }
   };
 
@@ -98,42 +109,44 @@ export default function ClaimDashboard() {
 
       <div className="text-center mb-10">
         <h2 className="text-2xl font-semibold text-cyan-300 mb-2">
-          Total Pending Rewards:{" "}
-          <span className="text-white">{totalRewards} BNB</span>
+          Total Pending Rewards: <span className="text-white">{totalRewards} BNB</span>
         </h2>
-        {totalRewards > 0 && (
-          <button
-            onClick={claimAll}
-            className="mt-4 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
-          >
-            Claim All Rewards
-          </button>
-        )}
       </div>
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="max-w-4xl mx-auto mb-10 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
         {[0, 1, 2].map((type) => {
-          const nodes = grouped[type];
+          const nodes = groupedByType[type] || [];
           if (nodes.length === 0) return null;
 
-          const total = nodes.reduce((sum, n) => sum + n.reward, 0).toFixed(4);
+          const label = `${nodes.length} ${getNodeLabel(type)}${nodes.length > 1 ? 's' : ''}`;
+          const totalByType = nodes.reduce((acc, n) => acc + n.reward, 0).toFixed(4);
+
           return (
             <div
               key={type}
-              className="bg-[#0b0e15] border border-cyan-600 rounded-2xl p-6 text-center shadow-[0_0_20px_#00e5ff40]"
+              className="bg-[#0b0e15] border border-cyan-600 rounded-2xl p-4 shadow-[0_0_20px_#00e5ff40]"
             >
               <img
                 src={getNodeImage(type)}
-                alt={getNodeLabel(type)}
-                className="w-32 h-32 mx-auto rounded-lg mb-4 object-contain"
+                alt={label}
+                className="w-32 h-32 mx-auto object-contain rounded-xl mb-4"
               />
-              <h3 className="text-xl font-bold text-cyan-300">
-                {nodes.length} {getNodeLabel(type)}{nodes.length > 1 ? "s" : ""}
-              </h3>
-              <p className="text-cyan-400 mt-2">{total} BNB</p>
+              <h3 className="text-xl text-cyan-300 font-bold">{label}</h3>
+              <p className="text-cyan-400 mt-2">
+                {totalByType} BNB
+              </p>
             </div>
           );
         })}
+      </div>
+
+      <div className="text-center mt-10">
+        <button
+          onClick={claimAllRewards}
+          className="px-8 py-4 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-2xl shadow-[0_0_30px_#00e5ff80] text-xl transition"
+        >
+          Claim All Rewards
+        </button>
       </div>
     </div>
   );
