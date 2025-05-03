@@ -21,7 +21,7 @@ export default function ClaimDashboard() {
   const [account, setAccount] = useState("");
   const [totalRewards, setTotalRewards] = useState("0.0000");
   const [groupedByType, setGroupedByType] = useState({});
-  const [showModal, setShowModal] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
     loadNodeData();
@@ -42,7 +42,7 @@ export default function ClaimDashboard() {
     const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
 
     try {
-      const owned = await nodeContract.getOwnedNodes(userAddress);
+      const owned = await nodeContract.getOwnedNodes(userAddress); // [index]
       setOwnedNodes(owned);
 
       const rewardData = {};
@@ -50,13 +50,13 @@ export default function ClaimDashboard() {
       const grouped = { 0: [], 1: [], 2: [] };
 
       for (let i = 0; i < owned.length; i++) {
-        const nodeId = owned[i];
-        const [type] = await nodeContract.getNode(nodeId);
-        const reward = await distributor.nodeClaimableBNB(nodeId);
+        const nodeIndex = owned[i];
+        const [nodeType, , ] = await nodeContract.getNode(nodeIndex);
+        const reward = await distributor.nodeClaimableBNB(nodeIndex);
         const formatted = parseFloat(formatEther(reward));
-        rewardData[nodeId] = formatted.toFixed(4);
+        rewardData[`${nodeType}-${nodeIndex}`] = formatted.toFixed(4);
         total += formatted;
-        grouped[type].push({ index: nodeId, reward: formatted });
+        grouped[nodeType].push({ index: nodeIndex, reward: formatted });
       }
 
       setGroupedByType(grouped);
@@ -73,12 +73,14 @@ export default function ClaimDashboard() {
     const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
 
     try {
-      const tx = await distributor.claimMultiple(ownedNodes);
+      const nodeIds = ownedNodes.map(index => index);
+      const tx = await distributor.claimMultiple(nodeIds);
       await tx.wait();
-      setShowModal(true);
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 4000);
       loadNodeData();
     } catch (err) {
-      console.error("Claim failed:", err);
+      console.error("Claim All failed:", err);
       alert("Claim failed or cancelled.");
     }
   };
@@ -95,52 +97,50 @@ export default function ClaimDashboard() {
     return slothImg;
   };
 
+  const countNodes = (type) => groupedByType[type]?.length || 0;
+
   return (
-    <div className="min-h-screen bg-[#060a13] text-white px-4 py-12 relative">
-      <h1 className="text-4xl font-bold text-center text-cyan-400 mb-6 drop-shadow-[0_0_25px_#00e5ff]">
+    <div className="min-h-screen bg-[#060a13] text-white px-6 py-12">
+      <h1 className="text-4xl font-bold text-center text-cyan-400 mb-4 drop-shadow-[0_0_25px_#00e5ff]">
         Claim Your BNB Rewards
       </h1>
 
-      <p className="text-center text-cyan-200 mb-6">
+      <p className="text-center text-cyan-200 mb-4">
         Wallet: <span className="text-white font-mono">{account}</span>
       </p>
 
-      <div className="text-center mb-10">
-        <h2 className="text-2xl font-semibold text-cyan-300 mb-2">
-          Total Pending Rewards: <span className="text-white">{totalRewards} BNB</span>
-        </h2>
+      <h2 className="text-center text-2xl font-semibold text-cyan-300 mb-2">
+        Total Pending Rewards: <span className="text-white">{totalRewards} BNB</span>
+      </h2>
 
-        {ownedNodes.length > 0 && (
-          <button
-            onClick={claimAllRewards}
-            className="mt-4 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
-          >
-            Claim All Rewards
-          </button>
-        )}
-      </div>
+      {(countNodes(0) + countNodes(1) + countNodes(2)) > 0 && (
+        <p className="text-center text-cyan-400 mb-6">
+          You own:
+          {countNodes(0) > 0 && ` ${countNodes(0)} Bull Node${countNodes(0) > 1 ? 's' : ''}`}
+          {countNodes(1) > 0 && `, ${countNodes(1)} Ape Node${countNodes(1) > 1 ? 's' : ''}`}
+          {countNodes(2) > 0 && `, ${countNodes(2)} Sloth Node${countNodes(2) > 1 ? 's' : ''}`}
+        </p>
+      )}
 
-      {/* Node Cards */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 justify-items-center">
+      <div className="flex flex-wrap justify-center gap-6 mb-10">
         {[0, 1, 2].map((type) => {
           const nodes = groupedByType[type] || [];
           if (nodes.length === 0) return null;
 
-          const label = getNodeLabel(type) + (nodes.length > 1 ? "s" : "");
           const totalByType = nodes.reduce((acc, n) => acc + n.reward, 0).toFixed(4);
 
           return (
             <div
               key={type}
-              className="bg-[#0b0e15] border border-cyan-600 rounded-2xl p-6 w-full max-w-sm text-center shadow-[0_0_20px_#00e5ff40]"
+              className="bg-[#0b0e15] border border-cyan-600 rounded-2xl p-6 shadow-[0_0_20px_#00e5ff40] text-center w-64"
             >
               <img
                 src={getNodeImage(type)}
-                alt={label}
-                className="w-full h-64 object-cover rounded-xl mb-4"
+                alt={getNodeLabel(type)}
+                className="w-48 h-48 mx-auto object-contain rounded-xl mb-4"
               />
               <h3 className="text-xl text-cyan-300 font-bold">
-                {nodes.length} {label}
+                {nodes.length} {getNodeLabel(type)}{nodes.length > 1 ? "s" : ""}
               </h3>
               <p className="text-cyan-400 mt-2">{totalByType} BNB</p>
             </div>
@@ -148,21 +148,20 @@ export default function ClaimDashboard() {
         })}
       </div>
 
-      {/* Glowing Success Modal */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-          <div className="bg-[#0f111b] border border-cyan-500 text-center px-10 py-8 rounded-3xl shadow-[0_0_60px_#00e5ffaa] animate-pulse">
-            <h2 className="text-3xl font-bold text-cyan-400 mb-4">
-              🎉 Congratulations!
-            </h2>
-            <p className="text-cyan-200 text-lg">You just claimed your BNB from Divi!</p>
-            <button
-              className="mt-6 px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-black font-bold rounded-xl"
-              onClick={() => setShowModal(false)}
-            >
-              Close
-            </button>
-          </div>
+      {ownedNodes.length > 0 && (
+        <div className="flex justify-center">
+          <button
+            onClick={claimAllRewards}
+            className="mt-4 px-8 py-4 bg-cyan-500 hover:bg-cyan-600 text-black font-bold text-lg rounded-xl shadow-lg transition drop-shadow-[0_0_20px_#00e5ff]"
+          >
+            Claim All Rewards
+          </button>
+        </div>
+      )}
+
+      {showPopup && (
+        <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 text-cyan-400 text-2xl font-bold px-10 py-6 rounded-2xl shadow-[0_0_30px_#00e5ff] z-50">
+          ✅ Congratulations! You just claimed your BNB rewards!
         </div>
       )}
     </div>
