@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+\import React, { useEffect, useState } from "react";
 import {
   BrowserProvider,
   Contract,
@@ -41,7 +41,7 @@ export default function ClaimDashboard() {
     const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
 
     try {
-      const owned = await nodeContract.getOwnedNodes(userAddress); // [type, index]
+      const owned = await nodeContract.getOwnedNodes(userAddress); // returns array of nodeIds (uint256[])
       setOwnedNodes(owned);
 
       const rewardData = {};
@@ -49,12 +49,19 @@ export default function ClaimDashboard() {
       const grouped = { 0: [], 1: [], 2: [] };
 
       for (let i = 0; i < owned.length; i++) {
-        const [nodeType, nodeIndex] = owned[i];
-        const reward = await distributor.nodeClaimableBNB(nodeIndex);
+        const nodeId = owned[i];
+        const reward = await distributor.nodeClaimableBNB(nodeId);
         const formatted = parseFloat(formatEther(reward));
-        rewardData[`${nodeType}-${nodeIndex}`] = formatted.toFixed(4);
+        rewardData[nodeId] = formatted.toFixed(4);
         total += formatted;
-        grouped[nodeType].push({ index: nodeIndex, reward: formatted });
+
+        // Determine node type by ID range
+        let type = 0;
+        if (nodeId >= 0 && nodeId <= 9) type = 0; // Bull
+        else if (nodeId >= 10 && nodeId <= 19) type = 1; // Ape
+        else type = 2; // Sloth
+
+        grouped[type].push({ index: nodeId, reward: formatted });
       }
 
       setGroupedByType(grouped);
@@ -71,7 +78,7 @@ export default function ClaimDashboard() {
     const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
 
     try {
-      const nodeIds = ownedNodes.map(([_, index]) => index);
+      const nodeIds = ownedNodes;
       const tx = await distributor.claimMultiple(nodeIds);
       await tx.wait();
       alert("All rewards claimed!");
@@ -106,8 +113,7 @@ export default function ClaimDashboard() {
 
       <div className="text-center mb-10">
         <h2 className="text-2xl font-semibold text-cyan-300 mb-2">
-          Total Pending Rewards:{" "}
-          <span className="text-white">{totalRewards} BNB</span>
+          Total Pending Rewards: <span className="text-white">{totalRewards} BNB</span>
         </h2>
         {ownedNodes.length > 0 && (
           <button
