@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useWallet } from "../../context/WalletContext";
 import { ethers } from "ethers";
 import DiviNodeOwnershipABI from "../../abis/DiviNodeOwnership.json";
@@ -11,12 +11,17 @@ import slothImg from "../../assets/Sloth.jpeg";
 const NODE_CONTRACT_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
 const DEPLOYER_ADDRESS = "0x8f9c1147b2c710f92be65956fde139351123d27e";
 
+const tierInfo = {
+  Bull: { start: 0, end: 9, price: "2.75" },
+  Ape: { start: 10, end: 19, price: "1.75" },
+  Sloth: { start: 20, end: 29, price: "0.75" },
+};
+
 const nodes = [
   {
     type: "Bull Node",
     tier: "Bull",
     image: bullImg,
-    bnb: "2.75 BNB",
     reward: "50% of all node rewards",
     quote: "The apex predator of passive income. Own the charge.",
   },
@@ -24,7 +29,6 @@ const nodes = [
     type: "Ape Node",
     tier: "Ape",
     image: apeImg,
-    bnb: "1.75 BNB",
     reward: "35% of all node rewards",
     quote: "Strong hands. Banana dreams. Mid-tier yield, max-tier vibes.",
   },
@@ -32,7 +36,6 @@ const nodes = [
     type: "Sloth Node",
     tier: "Sloth",
     image: slothImg,
-    bnb: "0.75 BNB",
     reward: "15% of all node rewards",
     quote: "Why hustle when you can coast? Earn while you nap.",
   },
@@ -41,17 +44,45 @@ const nodes = [
 export default function BuyNodes() {
   const { walletAddress } = useWallet();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [nodesLeft, setNodesLeft] = useState({ Bull: 0, Ape: 0, Sloth: 0 });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchNodesLeft();
+  }, []);
+
+  const fetchNodesLeft = async () => {
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(
+        NODE_CONTRACT_ADDRESS,
+        DiviNodeOwnershipABI,
+        provider
+      );
+
+      const updated = {};
+      for (const [tier, { start, end }] of Object.entries(tierInfo)) {
+        let count = 0;
+        for (let id = start; id <= end; id++) {
+          const [, owner, isOwned] = await contract.getNode(id);
+          if (owner.toLowerCase() === DEPLOYER_ADDRESS && isOwned === false) {
+            count++;
+          }
+        }
+        updated[tier] = count;
+      }
+
+      setNodesLeft(updated);
+    } catch (err) {
+      console.error("Error fetching nodes left:", err);
+    }
+  };
 
   const getAvailableNodeId = async (start, end, contract) => {
     for (let id = start; id <= end; id++) {
       try {
-        const [nodeType, owner, isOwned] = await contract.getNode(id);
-
-        if (
-          owner.toLowerCase() === DEPLOYER_ADDRESS &&
-          isOwned === false
-        ) {
+        const [, owner, isOwned] = await contract.getNode(id);
+        if (owner.toLowerCase() === DEPLOYER_ADDRESS && isOwned === false) {
           return id;
         }
       } catch (err) {
@@ -72,12 +103,6 @@ export default function BuyNodes() {
         signer
       );
 
-      const tierInfo = {
-        Bull: { start: 0, end: 9, price: "2.75" },
-        Ape: { start: 10, end: 19, price: "1.75" },
-        Sloth: { start: 20, end: 29, price: "0.75" },
-      };
-
       const { start, end, price } = tierInfo[tier];
       const availableNodeId = await getAvailableNodeId(start, end, contract);
 
@@ -87,6 +112,7 @@ export default function BuyNodes() {
       await tx.wait();
 
       setShowSuccess(true);
+      await fetchNodesLeft();
       setTimeout(() => navigate("/nodes/claim"), 2000);
     } catch (err) {
       console.error("Buy failed:", err);
@@ -125,11 +151,16 @@ export default function BuyNodes() {
             <h2 className="text-2xl font-bold text-cyan-300 mb-2">
               {node.type}
             </h2>
-            <p className="text-cyan-200 font-semibold">{node.bnb}</p>
+            <p className="text-cyan-200 font-semibold">
+              {tierInfo[node.tier].price} BNB
+            </p>
             <p className="text-cyan-400 mt-2 italic">{node.reward}</p>
             <p className="text-cyan-500 mt-4 text-sm">{node.quote}</p>
+            <p className="mt-2 text-cyan-300 font-bold">
+              {nodesLeft[node.tier] ?? "…"} Left
+            </p>
             <button
-              className="mt-6 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
+              className="mt-4 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
               onClick={() => handleBuy(node.tier)}
             >
               Buy Now
