@@ -49,15 +49,22 @@ const Spinner = () => (
 export default function BuyNodes() {
   const { walletAddress } = useWallet();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [nodesLeft, setNodesLeft] = useState(null); // ⬅️ Changed from object to null
+  const [nodesLeft, setNodesLeft] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchNodesLeft();
+    const waitForEthereumAndFetch = async () => {
+      if (typeof window.ethereum === "undefined") return;
+      await fetchNodesLeft();
+    };
+
+    waitForEthereumAndFetch();
   }, []);
 
   const fetchNodesLeft = async () => {
     try {
+      if (!window.ethereum) return;
+
       const provider = new ethers.BrowserProvider(window.ethereum);
       const contract = new ethers.Contract(
         NODE_CONTRACT_ADDRESS,
