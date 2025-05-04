@@ -11,6 +11,9 @@ import slothImg from "../../assets/Sloth.jpeg";
 const NODE_CONTRACT_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
 const DEPLOYER_ADDRESS = "0x8f9c1147b2c710f92be65956fde139351123d27e";
 
+// Public BSC RPC for read-only access
+const READ_RPC = "https://bsc-dataseed.binance.org/";
+
 const tierInfo = {
   Bull: { start: 0, end: 9, price: "2.75" },
   Ape: { start: 10, end: 19, price: "1.75" },
@@ -53,19 +56,12 @@ export default function BuyNodes() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const waitForEthereumAndFetch = async () => {
-      if (typeof window.ethereum === "undefined") return;
-      await fetchNodesLeft();
-    };
-
-    waitForEthereumAndFetch();
+    fetchNodesLeft(); // Fetch node data on load, no wallet required
   }, []);
 
   const fetchNodesLeft = async () => {
     try {
-      if (!window.ethereum) return;
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.JsonRpcProvider(READ_RPC);
       const contract = new ethers.Contract(
         NODE_CONTRACT_ADDRESS,
         DiviNodeOwnershipABI,
