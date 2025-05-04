@@ -41,6 +41,11 @@ const nodes = [
   },
 ];
 
+// 🔄 Spinner Component
+const Spinner = () => (
+  <div className="w-6 h-6 border-4 border-white border-t-cyan-400 rounded-full animate-spin mx-auto" />
+);
+
 export default function BuyNodes() {
   const { walletAddress } = useWallet();
   const [showSuccess, setShowSuccess] = useState(false);
@@ -157,7 +162,11 @@ export default function BuyNodes() {
             <p className="text-cyan-400 mt-2 italic">{node.reward}</p>
             <p className="text-cyan-500 mt-4 text-sm">{node.quote}</p>
             <p className="mt-2 text-cyan-300 font-bold">
-              {nodesLeft[node.tier] ?? "…"} Left
+              {nodesLeft[node.tier] === undefined ? (
+                <Spinner />
+              ) : (
+                `${nodesLeft[node.tier]} Left`
+              )}
             </p>
             <button
               className="mt-4 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
