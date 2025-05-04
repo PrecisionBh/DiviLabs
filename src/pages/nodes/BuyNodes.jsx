@@ -9,6 +9,7 @@ import apeImg from "../../assets/Ape.jpeg";
 import slothImg from "../../assets/Sloth.jpeg";
 
 const NODE_CONTRACT_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
+const DEPLOYER_ADDRESS = "0x8f9c1147b2c710f92be65956fde139351123d27e";
 
 const nodes = [
   {
@@ -45,11 +46,16 @@ export default function BuyNodes() {
   const getAvailableNodeId = async (start, end, contract) => {
     for (let id = start; id <= end; id++) {
       try {
-        const owner = await contract.ownerOf(id);
-        if (owner === ethers.ZeroAddress) return id;
+        const [nodeType, owner, isOwned] = await contract.getNode(id);
+
+        if (
+          owner.toLowerCase() === DEPLOYER_ADDRESS &&
+          isOwned === false
+        ) {
+          return id;
+        }
       } catch (err) {
-        // Not minted or unowned
-        return id;
+        console.error(`Error checking node ${id}:`, err);
       }
     }
     throw new Error("All nodes sold out in this tier");
