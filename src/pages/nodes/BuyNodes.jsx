@@ -49,7 +49,7 @@ const Spinner = () => (
 export default function BuyNodes() {
   const { walletAddress } = useWallet();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [nodesLeft, setNodesLeft] = useState({ Bull: 0, Ape: 0, Sloth: 0 });
+  const [nodesLeft, setNodesLeft] = useState(null); // ⬅️ Changed from object to null
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -162,7 +162,7 @@ export default function BuyNodes() {
             <p className="text-cyan-400 mt-2 italic">{node.reward}</p>
             <p className="text-cyan-500 mt-4 text-sm">{node.quote}</p>
             <p className="mt-2 text-cyan-300 font-bold">
-              {nodesLeft[node.tier] === undefined ? (
+              {!nodesLeft ? (
                 <Spinner />
               ) : (
                 `${nodesLeft[node.tier]} Left`
