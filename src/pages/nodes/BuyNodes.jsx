@@ -9,7 +9,6 @@ import apeImg from "../../assets/Ape.jpeg";
 import slothImg from "../../assets/Sloth.jpeg";
 
 const NODE_CONTRACT_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
-const DEPLOYER_ADDRESS = "0x8f9c1147b2c710f92be65956fde139351123d27e";
 
 // Public BSC RPC for read-only access
 const READ_RPC = "https://bsc-dataseed.binance.org/";
@@ -70,14 +69,12 @@ export default function BuyNodes() {
 
       const updated = {};
       for (const [tier, { start, end }] of Object.entries(tierInfo)) {
-        let count = 0;
+        let available = 0;
         for (let id = start; id <= end; id++) {
-          const [, owner, isOwned] = await contract.getNode(id);
-          if (owner.toLowerCase() === DEPLOYER_ADDRESS && isOwned === false) {
-            count++;
-          }
+          const [, , isOwned] = await contract.getNode(id);
+          if (!isOwned) available++;
         }
-        updated[tier] = count;
+        updated[tier] = available;
       }
 
       setNodesLeft(updated);
@@ -89,10 +86,8 @@ export default function BuyNodes() {
   const getAvailableNodeId = async (start, end, contract) => {
     for (let id = start; id <= end; id++) {
       try {
-        const [, owner, isOwned] = await contract.getNode(id);
-        if (owner.toLowerCase() === DEPLOYER_ADDRESS && isOwned === false) {
-          return id;
-        }
+        const [, , isOwned] = await contract.getNode(id);
+        if (!isOwned) return id;
       } catch (err) {
         console.error(`Error checking node ${id}:`, err);
       }

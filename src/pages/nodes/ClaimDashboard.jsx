@@ -20,7 +20,7 @@ export default function ClaimDashboard() {
   const [rewards, setRewards] = useState({});
   const [account, setAccount] = useState("");
   const [totalRewards, setTotalRewards] = useState("0.0000");
-  const [groupedByType, setGroupedByType] = useState({});
+  const [groupedByType, setGroupedByType] = useState({ 0: [], 1: [], 2: [] });
   const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
@@ -33,16 +33,17 @@ export default function ClaimDashboard() {
       return;
     }
 
-    const provider = new BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const userAddress = await signer.getAddress();
-    setAccount(userAddress);
-
-    const nodeContract = new Contract(NODE_OWNERSHIP_ADDRESS, DiviNodeOwnershipABI, signer);
-    const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
-
     try {
-      const owned = await nodeContract.getOwnedNodes(userAddress); // [index]
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+      setAccount(userAddress);
+
+      const nodeContract = new Contract(NODE_OWNERSHIP_ADDRESS, DiviNodeOwnershipABI, signer);
+      const distributor = new Contract(REWARD_DISTRIBUTOR_ADDRESS, RewardDistributorABI, signer);
+
+      const rawOwned = await nodeContract.getOwnedNodes(userAddress);
+      const owned = rawOwned.map(n => Number(n));
       setOwnedNodes(owned);
 
       const rewardData = {};
@@ -51,12 +52,20 @@ export default function ClaimDashboard() {
 
       for (let i = 0; i < owned.length; i++) {
         const nodeIndex = owned[i];
-        const [nodeType, , ] = await nodeContract.getNode(nodeIndex);
+
+        // Get node type from the ownership contract
+        const [nodeTypeRaw] = await nodeContract.getNode(nodeIndex);
+        const nodeType = Number(nodeTypeRaw);
+
+        // Get claimable BNB for this node
         const reward = await distributor.nodeClaimableBNB(nodeIndex);
         const formatted = parseFloat(formatEther(reward));
         rewardData[`${nodeType}-${nodeIndex}`] = formatted.toFixed(4);
         total += formatted;
-        grouped[nodeType].push({ index: nodeIndex, reward: formatted });
+
+        if (grouped[nodeType]) {
+          grouped[nodeType].push({ index: nodeIndex, reward: formatted });
+        }
       }
 
       setGroupedByType(grouped);
