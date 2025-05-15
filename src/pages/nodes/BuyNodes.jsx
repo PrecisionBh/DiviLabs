@@ -9,8 +9,7 @@ import apeImg from "../../assets/Ape.jpeg";
 import slothImg from "../../assets/Sloth.jpeg";
 
 const NODE_CONTRACT_ADDRESS = "0xef2b50EDed0F3AF33470C2E9260954b574e4D375";
-
-// Public BSC RPC for read-only access
+const DEV_WALLET = "0x8f9c1147b2c710F92BE65956fDE139351123d27E".toLowerCase();
 const READ_RPC = "https://bsc-dataseed.binance.org/";
 
 const tierInfo = {
@@ -43,7 +42,6 @@ const nodes = [
   },
 ];
 
-// 🔄 Spinner Component
 const Spinner = () => (
   <div className="w-6 h-6 border-4 border-white border-t-cyan-400 rounded-full animate-spin mx-auto" />
 );
@@ -55,7 +53,7 @@ export default function BuyNodes() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchNodesLeft(); // Fetch node data on load, no wallet required
+    fetchNodesLeft();
   }, []);
 
   const fetchNodesLeft = async () => {
@@ -71,8 +69,8 @@ export default function BuyNodes() {
       for (const [tier, { start, end }] of Object.entries(tierInfo)) {
         let available = 0;
         for (let id = start; id <= end; id++) {
-          const [, , isOwned] = await contract.getNode(id);
-          if (!isOwned) available++;
+          const [, owner] = await contract.getNode(id);
+          if (owner.toLowerCase() === DEV_WALLET) available++;
         }
         updated[tier] = available;
       }
@@ -85,12 +83,8 @@ export default function BuyNodes() {
 
   const getAvailableNodeId = async (start, end, contract) => {
     for (let id = start; id <= end; id++) {
-      try {
-        const [, , isOwned] = await contract.getNode(id);
-        if (!isOwned) return id;
-      } catch (err) {
-        console.error(`Error checking node ${id}:`, err);
-      }
+      const [, owner] = await contract.getNode(id);
+      if (owner.toLowerCase() === DEV_WALLET) return id;
     }
     throw new Error("All nodes sold out in this tier");
   };
@@ -118,7 +112,7 @@ export default function BuyNodes() {
       await fetchNodesLeft();
       setTimeout(() => navigate("/nodes/claim"), 2000);
     } catch (err) {
-      console.error("Buy failed:", err);
+      console.error("Buy failed:", err.reason || err);
       alert("Transaction failed or all nodes in this tier are sold.");
     }
   };
@@ -160,11 +154,7 @@ export default function BuyNodes() {
             <p className="text-cyan-400 mt-2 italic">{node.reward}</p>
             <p className="text-cyan-500 mt-4 text-sm">{node.quote}</p>
             <p className="mt-2 text-cyan-300 font-bold">
-              {!nodesLeft ? (
-                <Spinner />
-              ) : (
-                `${nodesLeft[node.tier]} Left`
-              )}
+              {!nodesLeft ? <Spinner /> : `${nodesLeft[node.tier]} Left`}
             </p>
             <button
               className="mt-4 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-black font-bold rounded-xl shadow-lg transition"
