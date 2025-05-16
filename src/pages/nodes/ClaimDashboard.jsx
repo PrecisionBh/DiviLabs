@@ -53,11 +53,9 @@ export default function ClaimDashboard() {
       for (let i = 0; i < owned.length; i++) {
         const nodeIndex = owned[i];
 
-        // Get node type from the ownership contract
         const [nodeTypeRaw] = await nodeContract.getNode(nodeIndex);
         const nodeType = Number(nodeTypeRaw);
 
-        // Get claimable BNB for this node
         const reward = await distributor.nodeClaimableBNB(nodeIndex);
         const formatted = parseFloat(formatEther(reward));
         rewardData[`${nodeType}-${nodeIndex}`] = formatted.toFixed(4);
@@ -136,7 +134,7 @@ export default function ClaimDashboard() {
           const nodes = groupedByType[type] || [];
           if (nodes.length === 0) return null;
 
-          const totalByType = nodes.reduce((acc, n) => acc + n.reward, 0).toFixed(4);
+          const totalByType = nodes.reduce((acc, n) => acc + parseFloat(n.reward), 0).toFixed(4);
 
           return (
             <div
